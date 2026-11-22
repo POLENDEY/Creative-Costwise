@@ -3,7 +3,6 @@ import {
   ArrowRight,
   ArrowUpRight,
   Calculator,
-  CircleDollarSign,
   Package,
   Printer,
   Sparkles,
@@ -15,6 +14,7 @@ import { calculateMaterialCostPerPiece } from "@/lib/costing";
 import { formatMoney, resolveCurrency } from "@/lib/money";
 import { checklistSteps, parseChecklist } from "@/lib/checklist";
 import { toggleChecklistStep } from "@/actions/shop";
+import { CurrencyMark } from "@/components/currency-mark";
 
 export default async function DashboardPage() {
   const user = await requireCrafter();
@@ -67,7 +67,7 @@ export default async function DashboardPage() {
           <div className="overview-card-bottom"><Link href="/costing">Open calculator <ArrowUpRight size={13} /></Link></div>
         </article>
         <article className="overview-card overview-card-sand">
-          <div className="overview-card-top"><span className="overview-icon"><CircleDollarSign size={18} /></span><span className="overview-tag">PRICE LIST</span></div>
+          <div className="overview-card-top"><span className="overview-icon"><CurrencyMark currency={currency} /></span><span className="overview-tag">PRICE LIST</span></div>
           <b className="overview-value">{priceSets.length}</b><span className="overview-label">saved price sets</span>
           <div className="overview-card-bottom"><Link href="/prices">Browse prices <ArrowUpRight size={13} /></Link></div>
         </article>

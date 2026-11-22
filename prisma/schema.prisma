@@ -24,6 +24,8 @@ model User {
   materials          Material[]
   printers           Printer[]
   costingTabs        CostingTab[]
+  purchaseOrders     PurchaseOrder[]
+  notifications      Notification[]
 }
 
 model ShopSettings {
@@ -153,4 +155,74 @@ model PriceSet {
   costingTab          CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
 
   @@index([userId, category])
+}
+
+model PurchaseOrder {
+  id            String             @id @default(cuid())
+  userId        String
+  status        String             @default("pending")
+  currency      String             @default("PHP")
+  note          String             @default("")
+  response      String             @default("")
+  respondedAt   DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+  crafter       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lines         PurchaseOrderLine[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
+}
+
+model PurchaseOrderLine {
+  id                    String               @id @default(cuid())
+  purchaseOrderId       String
+  priceSetId            String?
+  productName           String
+  category              String
+  pricingOption         String
+  quantity              Int
+  unitPriceMinor        Int
+  unitProductionCostMinor Int
+  lineTotalMinor        Int
+  lineProductionCostMinor Int
+  breakdownJson         String
+  createdAt             DateTime             @default(now())
+  purchaseOrder         PurchaseOrder        @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  inventoryItem         AdminInventoryItem?
+
+  @@index([purchaseOrderId])
+}
+
+model AdminInventoryItem {
+  id                      String            @id @default(cuid())
+  purchaseOrderLineId     String            @unique
+  crafterName             String
+  crafterEmail            String
+  productName             String
+  category                String
+  currency                String
+  quantityReceived        Int
+  quantityOnHand          Int
+  unitPriceMinor          Int
+  unitProductionCostMinor Int
+  breakdownJson           String
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  purchaseOrderLine       PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
+
+  @@index([category, productName])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  href      String
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
 }

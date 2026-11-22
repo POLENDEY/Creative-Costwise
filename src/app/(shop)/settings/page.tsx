@@ -3,6 +3,7 @@ import { saveSettings } from "@/actions/shop";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { LogoUploader } from "@/components/logo-uploader";
+import { PasswordChangeForm } from "@/components/password-change-form";
 
 const themes = [
   ["pink", "#BE185D", "Pink"],
@@ -45,6 +46,7 @@ export default async function SettingsPage() {
         <div className="settings-submit-row"><span><Check size={15} /> Your choices are saved to this shop.</span><button className="button button-primary" type="submit">Save changes <ArrowRight size={16} /></button></div>
       </form>
       <LogoUploader logoPath={settings?.logoPath ?? null} />
+      <PasswordChangeForm />
     </div>
   );
 }

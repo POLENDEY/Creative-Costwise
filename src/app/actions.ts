@@ -60,7 +60,11 @@ export async function createCrafter(formData: FormData) {
     await tx.shopSettings.create({ data: { userId: user.id } });
   });
   revalidatePath("/admin/users");
-  return { temporaryPassword };
+  return {
+    temporaryPassword,
+    crafterName: parsed.data.name,
+    crafterEmail: parsed.data.email,
+  };
 }
 
 const changePasswordSchema = z.object({

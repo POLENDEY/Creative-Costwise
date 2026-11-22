@@ -4,10 +4,26 @@ import { requireCrafter } from "@/lib/session";
 
 export default async function ShopLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const user = await requireCrafter();
-  const settings = await prisma.shopSettings.findUnique({ where: { userId: user.id } });
+  const [settings, notifications] = await Promise.all([
+    prisma.shopSettings.findUnique({ where: { userId: user.id } }),
+    prisma.notification.findMany({
+      where: { userId: user.id, readAt: null },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      select: { id: true, title: true, message: true, href: true, createdAt: true },
+    }),
+  ]);
   return (
     <div data-theme={settings?.theme ?? "pink"} data-scheme={settings?.colorScheme ?? "light"}>
-      <AppFrame name={user.name} businessName={settings?.businessName ?? ""} welcomeNeeded={!user.welcomedAt}>{children}</AppFrame>
+      <AppFrame
+        name={user.name}
+        businessName={settings?.businessName ?? ""}
+        welcomeNeeded={!user.welcomedAt}
+        plan={user.plan ?? "quarterly"}
+        expiresAt={user.expiresAt?.toISOString() ?? null}
+        colorScheme={settings?.colorScheme === "dark" ? "dark" : "light"}
+        notifications={notifications.map((notification) => ({ ...notification, createdAt: notification.createdAt.toISOString() }))}
+      >{children}</AppFrame>
     </div>
   );
 }

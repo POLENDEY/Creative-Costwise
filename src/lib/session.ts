@@ -10,7 +10,7 @@ export async function requireCrafter() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, name: true, expiresAt: true, disabledAt: true, mustChangePassword: true, plan: true, welcomedAt: true },
+    select: { id: true, name: true, email: true, expiresAt: true, disabledAt: true, mustChangePassword: true, plan: true, welcomedAt: true },
   });
   if (!user) redirect("/login");
   if (user.disabledAt) redirect("/session-disabled");

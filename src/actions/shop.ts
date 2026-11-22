@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import bcrypt from "bcryptjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -10,6 +11,9 @@ import { parseMoneyToMinor } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { checklistSteps, parseChecklist } from "@/lib/checklist";
+import { convertImageUploadToAvif } from "@/lib/images";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 const settingsSchema = z.object({
   currency: z.enum(["PHP", "USD"]),
@@ -51,6 +55,53 @@ export async function saveSettings(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function saveColorScheme(colorScheme: "light" | "dark") {
+  const user = await requireCrafter();
+  const parsed = z.enum(["light", "dark"]).safeParse(colorScheme);
+  if (!parsed.success) throw new Error("Choose light or dark mode.");
+  await prisma.shopSettings.upsert({
+    where: { userId: user.id },
+    update: { colorScheme: parsed.data },
+    create: { userId: user.id, colorScheme: parsed.data },
+  });
+  revalidatePath("/", "layout");
+}
+
+const ownPasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  password: z.string().min(10, "Use at least 10 characters for your new password."),
+  confirmPassword: z.string(),
+}).refine((value) => value.password === value.confirmPassword, {
+  message: "The passwords do not match.",
+  path: ["confirmPassword"],
+});
+
+export async function changeOwnPassword(formData: FormData) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id || session.user.role !== "crafter") {
+    throw new Error("Sign in to your crafter account to change its password.");
+  }
+  const parsed = ownPasswordSchema.safeParse({
+    currentPassword: formData.get("currentPassword"),
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check your password details.");
+  const account = await prisma.user.findFirst({
+    where: { id: session.user.id, role: "crafter" },
+    select: { passwordHash: true },
+  });
+  if (!account || !(await bcrypt.compare(parsed.data.currentPassword, account.passwordHash))) {
+    throw new Error("Your current password is incorrect.");
+  }
+  const passwordHash = await bcrypt.hash(parsed.data.password, 12);
+  await prisma.user.update({
+    where: { id: session.user.id },
+    data: { passwordHash },
+  });
+  revalidatePath("/settings");
+}
+
 const checklistActionSchema = z.object({
   step: z.enum(checklistSteps.map((step) => step.id)),
   done: z.enum(["true", "false"]),
@@ -77,27 +128,17 @@ export async function toggleChecklistStep(formData: FormData) {
 
 export async function uploadShopLogo(formData: FormData) {
   const user = await requireCrafter();
-  const allowedTypes = new Map([
-    ["image/jpeg", { extension: "jpg", signature: (bytes: Buffer) => bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff }],
-    ["image/png", { extension: "png", signature: (bytes: Buffer) => bytes.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])) }],
-    ["image/webp", { extension: "webp", signature: (bytes: Buffer) => bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP" }],
-  ]);
   const fileSchema = z.instanceof(File)
     .refine((file) => file.size > 0, "Choose an image file to upload.")
-    .refine((file) => file.size <= 2 * 1024 * 1024, "The logo must be 2 MB or smaller.")
-    .refine((file) => allowedTypes.has(file.type), "Use a JPEG, PNG, or WebP image.");
+    .refine((file) => file.size <= 2 * 1024 * 1024, "The logo must be 2 MB or smaller.");
   const fileResult = fileSchema.safeParse(formData.get("logo"));
   if (!fileResult.success) throw new Error(fileResult.error.issues[0]?.message ?? "Check the logo file.");
   const file = fileResult.data;
-  const imageType = allowedTypes.get(file.type);
-  if (!imageType) throw new Error("Use a JPEG, PNG, or WebP image.");
-
-  const image = Buffer.from(await file.arrayBuffer());
-  if (!imageType.signature(image)) throw new Error("The selected file does not match its image type.");
+  const image = await convertImageUploadToAvif(file);
   const directory = path.join(process.cwd(), "public", "uploads", user.id);
-  const filename = `business-logo-${randomUUID()}.${imageType.extension}`;
+  const filename = `business-logo-${randomUUID()}.avif`;
   await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), image, { flag: "wx" });
+  await writeFile(path.join(directory, filename), image.buffer, { flag: "wx" });
   const logoPath = `/uploads/${user.id}/${filename}`;
 
   await prisma.shopSettings.upsert({
