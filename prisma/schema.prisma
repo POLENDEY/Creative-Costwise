@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                 String        @id @default(cuid())
+  name               String
+  email              String        @unique
+  passwordHash       String
+  role               String        @default("crafter")
+  plan               String?       @default("annual")
+  expiresAt          DateTime?
+  disabledAt         DateTime?
+  mustChangePassword Boolean       @default(false)
+  welcomedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  settings           ShopSettings?
+  materials          Material[]
+  printers           Printer[]
+  costingTabs        CostingTab[]
+}
+
+model ShopSettings {
+  userId                     String   @id
+  currency                   String   @default("PHP")
+  theme                      String   @default("pink")
+  colorScheme                String   @default("light")
+  logoPath                   String?
+  businessName               String   @default("")
+  businessAddress            String   @default("")
+  businessPhone              String   @default("")
+  businessEmail              String   @default("")
+  paymentAccountName         String   @default("")
+  bankDetails                String   @default("")
+  gcashNumber                String   @default("")
+  defaultLossPercent         Decimal  @default(3)
+  defaultOperationalFeeMinor Int      @default(1000)
+  defaultLaborPercent        Decimal  @default(100)
+  markupRetailPercent        Decimal  @default(100)
+  markupBulkPercent          Decimal  @default(50)
+  markupPromoPercent         Decimal  @default(30)
+  markupLoyalPercent         Decimal  @default(40)
+  masterSheetUrl             String   @default("")
+  checklistJson              String   @default("{}")
+  user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Material {
+  id                String   @id @default(cuid())
+  userId            String
+  category          String   @default("Uncategorized")
+  name              String
+  piecesPerPack     Decimal
+  pricePerPackMinor Int
+  gsm               String   @default("")
+  thickness         String   @default("")
+  sizeNote          String   @default("")
+  finish            String   @default("matte")
+  finishOther       String   @default("")
+  unitLabel         String   @default("piece")
+  quantityOnHand    Decimal  @default(0)
+  lowStockAlert     Decimal?
+  supplierUrl       String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  costingLines      CostingMaterialLine[]
+
+  @@index([userId, category])
+  @@index([userId, name])
+}
+
+model Printer {
+  id                 String   @id @default(cuid())
+  userId             String
+  name               String
+  inkType            String   @default("dye")
+  colorInkPriceMinor Int      @default(0)
+  colorPageYield     Decimal
+  blackInkPriceMinor Int      @default(0)
+  blackPageYield     Decimal
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  costingLines       CostingPrintLine[]
+
+  @@index([userId, name])
+}
+
+model CostingTab {
+  id                   String                @id @default(cuid())
+  userId               String
+  name                 String
+  overagePercent       Decimal               @default(0)
+  lossPercent          Decimal               @default(3)
+  operationalFeeMinor  Int                   @default(1000)
+  laborPercent         Decimal               @default(100)
+  packagingCostMinor   Int                   @default(0)
+  markupRetailPercent  Decimal               @default(100)
+  markupBulkPercent    Decimal               @default(50)
+  markupPromoPercent   Decimal               @default(30)
+  markupLoyalPercent   Decimal               @default(40)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materialLines        CostingMaterialLine[]
+  printLines           CostingPrintLine[]
+  priceSets            PriceSet[]
+
+  @@index([userId, updatedAt])
+}
+
+model CostingMaterialLine {
+  id             String     @id @default(cuid())
+  costingTabId   String
+  materialId     String
+  unitsUsed      Decimal
+  finishedPieces Decimal
+  costingTab     CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
+  material       Material   @relation(fields: [materialId], references: [id], onDelete: Restrict)
+}
+
+model CostingPrintLine {
+  id             String     @id @default(cuid())
+  costingTabId   String
+  printerId      String
+  paperSize      String     @default("A4")
+  quality        String     @default("standard")
+  coverage       String     @default("normal_color")
+  sheetCount     Decimal    @default(1)
+  finishedPieces Decimal    @default(1)
+  costingTab     CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
+  printer        Printer    @relation(fields: [printerId], references: [id], onDelete: Restrict)
+}
+
+model PriceSet {
+  id                  String     @id @default(cuid())
+  userId              String
+  costingTabId        String
+  name                String
+  category            String     @default("Uncategorized")
+  retailPriceMinor    Int
+  bulkPriceMinor      Int
+  productionCostMinor Int
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  costingTab          CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
+
+  @@index([userId, category])
+}
