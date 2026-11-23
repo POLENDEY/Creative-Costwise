@@ -35,7 +35,8 @@ export default async function DashboardPage() {
     (material) => material.lowStockAlert !== null && Number(material.quantityOnHand) <= Number(material.lowStockAlert),
   );
   const checklist = parseChecklist(settings?.checklistJson ?? "{}");
-  const visibleSteps = checklistSteps.filter((step) => !step.annualOnly || user.plan === "annual");
+  // Every plan includes the same toolkit features, so no step is plan-specific.
+  const visibleSteps = checklistSteps;
   const completed = visibleSteps.filter((step) => checklist[step.id]).length;
 
   return (

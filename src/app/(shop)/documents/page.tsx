@@ -5,7 +5,7 @@ import { documentTotals } from "@/lib/documents";
 import { formatMoney, resolveCurrency } from "@/lib/money";
 
 export default async function DocumentsPage() {
-  const user = await requireCrafter();
+  const user = await requireCrafter("documents");
   const [documents, lines] = await Promise.all([
     prisma.businessDocument.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
     prisma.businessDocumentLine.findMany({ where: { userId: user.id } }),

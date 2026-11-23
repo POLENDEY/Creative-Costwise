@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 
 export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireCrafter();
+  const user = await requireCrafter("documents");
   const { id } = await params;
   const [document, lines] = await Promise.all([
     prisma.businessDocument.findFirst({ where: { id, userId: user.id } }),

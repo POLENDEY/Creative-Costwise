@@ -15,7 +15,7 @@ function labelFor(options: readonly { id: string; label: string }[], id: string)
 }
 
 export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireCrafter();
+  const user = await requireCrafter("orders");
   const { id } = await params;
   const [order, lines, history, sale, customers, products, bundles, digitals] = await Promise.all([
     prisma.shopOrder.findFirst({ where: { id, userId: user.id } }),

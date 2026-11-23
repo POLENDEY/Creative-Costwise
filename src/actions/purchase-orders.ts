@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireCrafter } from "@/lib/session";
+import { requirePlanFeature } from "@/lib/session";
 import { requireAdminSession } from "@/lib/admin-session";
 import { getProductCostBreakdown } from "@/lib/product-breakdown";
 import { getAdminNotificationAddress, sendPurchaseOrderEmail } from "@/lib/purchase-order-email";
@@ -85,7 +85,7 @@ async function buildLineSnapshots(userId: string, lines: z.infer<typeof lineRequ
 }
 
 export async function savePurchaseOrderDraft(payload: unknown) {
-  const crafter = await requireCrafter();
+  const crafter = await requirePlanFeature("purchaseOrders");
   const parsed = draftSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the draft details.");
   const { currency, lineSnapshots } = await buildLineSnapshots(crafter.id, parsed.data.lines);
@@ -126,7 +126,7 @@ export async function savePurchaseOrderDraft(payload: unknown) {
 }
 
 export async function submitPurchaseOrder(payload: unknown) {
-  const crafter = await requireCrafter();
+  const crafter = await requirePlanFeature("purchaseOrders");
   const parsed = requestSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the purchase request.");
   const { currency, lineSnapshots, totalMinor } = await buildLineSnapshots(crafter.id, parsed.data.lines);

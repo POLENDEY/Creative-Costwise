@@ -4,7 +4,7 @@ import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
 
 export default async function DigitalPage() {
-  const user = await requireCrafter();
+  const user = await requireCrafter("digital");
   const [settings, products] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
     prisma.digitalProduct.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),

@@ -7,7 +7,7 @@ import { documentTotals } from "@/lib/documents";
 import { parseMoneyToMinor, resolveCurrency } from "@/lib/money";
 import { PAYMENT_STATUSES } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
-import { requireCrafter } from "@/lib/session";
+import { requirePlanFeature } from "@/lib/session";
 
 const lineSchema = z.object({
   label: z.string().trim().min(1).max(120),
@@ -42,7 +42,7 @@ function moneyOrZero(value: unknown) {
 }
 
 export async function saveDocument(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("documents");
   const raw = typeof payload === "object" && payload !== null ? payload as Record<string, unknown> : {};
   const parsed = documentSchema.safeParse({
     ...raw,

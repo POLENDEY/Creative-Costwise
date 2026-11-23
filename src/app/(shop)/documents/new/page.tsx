@@ -10,7 +10,7 @@ function moneyInput(minor: number) {
 }
 
 export default async function NewDocumentPage({ searchParams }: { searchParams: Promise<{ order?: string; kind?: string }> }) {
-  const user = await requireCrafter();
+  const user = await requireCrafter("documents");
   const { order: orderId, kind: requestedKind } = await searchParams;
   const kind = requestedKind === "receipt" ? "receipt" : "invoice";
   const [settings, order, orderLines] = await Promise.all([

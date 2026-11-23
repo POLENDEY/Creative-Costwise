@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import { appUrl, createMailTransport, escapeHtml, mailFromAddress } from "@/lib/mailer";
 import { formatMoney, resolveCurrency } from "@/lib/money";
 import { parseProductCostBreakdown } from "@/lib/product-breakdown";
 
@@ -11,42 +11,6 @@ type PurchaseOrderEmailLine = {
   breakdownJson: string;
 };
 
-function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  })[character] ?? character);
-}
-
-function smtpPassword() {
-  return process.env.SMTP_PASSWORD || process.env.SMTP_PASS || "";
-}
-
-function createTransport() {
-  const user = process.env.SMTP_USER?.trim();
-  const pass = smtpPassword();
-  if (!user || !pass) return null;
-
-  const service = process.env.SMTP_SERVICE?.trim().toLowerCase();
-  if (service === "gmail") {
-    return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
-  }
-
-  const host = process.env.SMTP_HOST?.trim();
-  const port = Number(process.env.SMTP_PORT ?? 587);
-  if (!host || !Number.isInteger(port) || port < 1 || port > 65535) return null;
-  const secure = process.env.SMTP_SECURE
-    ? process.env.SMTP_SECURE.toLowerCase() === "true"
-    : port === 465;
-  return nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
-}
-
-function mailFromAddress() {
-  return process.env.MAIL_FROM?.trim() || process.env.EMAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || "";
-}
 
 export async function sendPurchaseOrderEmail(input: {
   to: string;
@@ -62,7 +26,7 @@ export async function sendPurchaseOrderEmail(input: {
   totalMinor: number;
   actionPath: "/admin/orders" | "/purchase-orders";
 }) {
-  const transport = createTransport();
+  const transport = createMailTransport();
   const from = mailFromAddress();
   if (!transport || !from) {
     return { sent: false, reason: "Email is not configured; the request is still available in the website inbox." };
@@ -82,7 +46,7 @@ export async function sendPurchaseOrderEmail(input: {
   const responseHtml = input.response
     ? `<p style="white-space:pre-wrap">${escapeHtml(input.response)}</p>`
     : "";
-  const actionUrl = new URL(input.actionPath, process.env.NEXTAUTH_URL ?? "http://localhost:3000").toString();
+  const actionUrl = appUrl(input.actionPath);
 
   try {
     await transport.sendMail({

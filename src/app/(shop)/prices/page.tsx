@@ -5,7 +5,7 @@ import { requireCrafter } from "@/lib/session";
 import { formatMoney, resolveCurrency } from "@/lib/money";
 
 export default async function PricesPage() {
-  const user = await requireCrafter();
+  const user = await requireCrafter("prices");
   const [settings, priceSets] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
     prisma.priceSet.findMany({ where: { userId: user.id }, include: { costingTab: { select: { name: true } } }, orderBy: { updatedAt: "desc" } }),

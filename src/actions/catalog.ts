@@ -5,7 +5,7 @@ import { z } from "zod";
 import { calculateBundle } from "@/lib/bundle";
 import { discountAmount } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
-import { requireCrafter } from "@/lib/session";
+import { requirePlanFeature } from "@/lib/session";
 
 const bundleSchema = z.object({
   id: z.string().optional(),
@@ -18,7 +18,7 @@ const bundleSchema = z.object({
 });
 
 export async function saveBundle(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("bundles");
   const parsed = bundleSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the bundle.");
   const input = parsed.data;
@@ -82,7 +82,7 @@ const promotionSchema = z.object({
 });
 
 export async function savePromotion(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("promotions");
   const parsed = promotionSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the promotion.");
   const input = parsed.data;
@@ -113,7 +113,7 @@ const digitalSchema = z.object({
 });
 
 export async function saveDigitalProduct(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("digital");
   const parsed = digitalSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the digital product.");
   const input = parsed.data;

@@ -10,7 +10,7 @@ function moneyInput(minor: number) {
 }
 
 export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
-  const user = await requireCrafter();
+  const user = await requireCrafter("orders");
   const { from } = await searchParams;
   const [settings, customers, products, bundles, digitals, source] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),

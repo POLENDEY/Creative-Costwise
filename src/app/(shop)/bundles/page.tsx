@@ -4,7 +4,7 @@ import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
 
 export default async function BundlesPage() {
-  const user = await requireCrafter();
+  const user = await requireCrafter("bundles");
   const [settings, products, bundles, items] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
     prisma.priceSet.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),

@@ -5,7 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
 });
 
@@ -23,11 +23,11 @@ export const authOptions: NextAuthOptions = {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
         const user = await prisma.user.findUnique({
-          where: { email: parsed.data.email.toLowerCase() },
+          where: { email: parsed.data.email },
         });
-        if (!user || user.disabledAt || !(await bcrypt.compare(parsed.data.password, user.passwordHash))) {
-          return null;
-        }
+        if (!user) return null;
+        if (!(await bcrypt.compare(parsed.data.password, user.passwordHash))) return null;
+        // Expired or paused plans still sign in; plan features are gated after login.
         return { id: user.id, name: user.name, email: user.email, role: user.role };
       },
     }),

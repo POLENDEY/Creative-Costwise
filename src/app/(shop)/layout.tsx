@@ -21,6 +21,7 @@ export default async function ShopLayout({ children }: Readonly<{ children: Reac
         welcomeNeeded={!user.welcomedAt}
         plan={user.plan ?? "quarterly"}
         expiresAt={user.expiresAt?.toISOString() ?? null}
+        accessReason={user.access.reason}
         colorScheme={settings?.colorScheme === "dark" ? "dark" : "light"}
         notifications={notifications.map((notification) => ({ ...notification, createdAt: notification.createdAt.toISOString() }))}
       >{children}</AppFrame>

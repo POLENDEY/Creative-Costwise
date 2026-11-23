@@ -18,6 +18,8 @@ model User {
   disabledAt         DateTime?
   mustChangePassword Boolean       @default(false)
   welcomedAt         DateTime?
+  renewalReminderSentAt DateTime?
+  renewalReminderFor    DateTime?
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
   settings           ShopSettings?
@@ -26,8 +28,42 @@ model User {
   costingTabs        CostingTab[]
   purchaseOrders     PurchaseOrder[]
   notifications      Notification[]
+  planPayments       PlanPayment[]
 
   @@index([role, createdAt])
+}
+
+/// A renewal payment proof a crafter submitted for a plan, reviewed by the admin.
+model PlanPayment {
+  id          String    @id @default(cuid()) @map("_id")
+  userId      String
+  plan        String
+  amountMinor Int
+  method      String    @default("gcash")
+  reference   String    @default("")
+  note        String    @default("")
+  proofPath   String
+  status      String    @default("pending")
+  adminNote   String    @default("")
+  reviewedBy  String?
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, submittedAt])
+  @@index([userId, submittedAt])
+}
+
+/// The shop's own payment details and QR code, shown on the plans page.
+model PlanPaymentSettings {
+  id           String   @id @map("_id")
+  accountName  String   @default("")
+  gcashNumber  String   @default("")
+  mayaNumber   String   @default("")
+  bankDetails  String   @default("")
+  instructions String   @default("")
+  qrPath       String?
+  updatedAt    DateTime @updatedAt
 }
 
 model ShopSettings {

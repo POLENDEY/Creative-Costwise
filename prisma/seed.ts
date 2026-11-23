@@ -38,7 +38,7 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: adminEmail },
-    update: {},
+    update: { name: "Creative Costwise Admin", passwordHash: adminHash, role: "admin" },
     create: {
       name: "Creative Costwise Admin",
       email: adminEmail,
@@ -49,7 +49,13 @@ async function main() {
 
   const crafter = await prisma.user.upsert({
     where: { email: crafterEmail },
-    update: {},
+    update: {
+      name: "Mia Santos",
+      passwordHash: crafterHash,
+      role: "crafter",
+      disabledAt: null,
+      expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+    },
     create: {
       name: "Mia Santos",
       email: crafterEmail,

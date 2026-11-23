@@ -19,7 +19,13 @@ export default function LoginPage() {
       redirect: false,
     });
     if (result?.error) {
-      setError("That email and password do not match. Check both and try again.");
+      setError(
+        result.error === "CredentialsSignin"
+          ? "That email and password do not match. Check both and try again."
+          : result.error === "Configuration" || result.error === "CallbackRouteError"
+            ? "Your sign-in could not be completed because the account database is unavailable. Try again in a moment."
+            : result.error,
+      );
       setBusy(false);
       document.getElementById("email")?.focus();
       return;

@@ -9,7 +9,7 @@ import { z } from "zod";
 import { calculateCost, calculateMaterialCostPerPiece, calculatePrinterBaseCosts } from "@/lib/costing";
 import { parseMoneyToMinor } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
-import { requireCrafter } from "@/lib/session";
+import { requireCrafter, requirePlanFeature } from "@/lib/session";
 import { checklistSteps, parseChecklist } from "@/lib/checklist";
 import { convertImageUploadToAvif } from "@/lib/images";
 import { getServerSession } from "next-auth";
@@ -264,7 +264,7 @@ const costingPayloadSchema = z.object({
 });
 
 export async function saveCostingTab(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("costing");
   const parsed = costingPayloadSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the costing inputs.");
   const input = parsed.data;
@@ -376,7 +376,7 @@ const priceSetSchema = z.object({
 });
 
 export async function savePriceSet(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("prices");
   const parsed = priceSetSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the price details.");
   const tab = await prisma.costingTab.findFirst({

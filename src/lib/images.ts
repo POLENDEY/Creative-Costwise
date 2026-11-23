@@ -21,10 +21,11 @@ const imageFormats = {
 
 export async function convertImageUploadToAvif(
   file: File,
-  options: { maxInputBytes?: number; maxDimension?: number } = {},
+  options: { maxInputBytes?: number; maxDimension?: number; quality?: number } = {},
 ) {
   const maxInputBytes = options.maxInputBytes ?? 2 * 1024 * 1024;
   const maxDimension = options.maxDimension ?? 2048;
+  const quality = options.quality ?? 55;
 
   if (file.size === 0) throw new Error("Choose an image file to upload.");
   if (file.size > maxInputBytes) {
@@ -60,7 +61,7 @@ export async function convertImageUploadToAvif(
 
   try {
     const output = await pipeline
-      .avif({ quality: 55, effort: 4, chromaSubsampling: "4:2:0" })
+      .avif({ quality, effort: 4, chromaSubsampling: "4:2:0" })
       .toBuffer();
     return { buffer: output, format: "avif" as const };
   } catch (error) {

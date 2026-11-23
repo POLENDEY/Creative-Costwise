@@ -13,7 +13,7 @@ export default async function CostingPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
-  const user = await requireCrafter();
+  const user = await requireCrafter("costing");
   const { tab: requestedTabId } = await searchParams;
   const [settings, materials, printers, tabs] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),

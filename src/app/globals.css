@@ -330,8 +330,8 @@ button { color: inherit; }
 .markup-card { display: grid; gap: 8px; padding: 11px; border: 1px solid var(--line); border-radius: 8px; }
 .markup-card>span { color: var(--muted); font-size: 9px; font-weight: 700; }
 .markup-card>b { font-family: Georgia, "Times New Roman", serif; font-size: 16px; font-weight: 400; }
-.markup-card>label { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 8px; }
-.markup-card>label input { width: 49px; height: 24px; padding: 3px 5px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; font-size: 9px; }
+.markup-card>label { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 9px; }
+.markup-card>label input { width: 62px; min-height: 34px; padding: 5px 6px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; font-size: 10px; }
 .markup-card>small { color: var(--muted); font-size: 8px; }
 .markup-pink { background: var(--accent-wash); }
 .markup-pink>b { color: var(--accent); }
@@ -876,4 +876,107 @@ button { color: inherit; }
   .po-heading-actions { width: 100%; }
   .po-heading-actions .button { flex: 1; }
   .admin-topbar-user { position: relative; }
+}
+/* Number fields: keep the browser stepper arrows fully visible and easy to click.
+   An explicit pixel height is required — `height: 100%` collapses the arrows into a clipped glyph. */
+input[type="number"] { min-height: 34px; font-variant-numeric: tabular-nums; }
+input[type="number"]::-webkit-inner-spin-button {
+  height: 20px;
+  opacity: 1;
+  cursor: pointer;
+}
+
+/* Plan renewal locks */
+.nav-link-locked { width: 100%; background: transparent; border: 0; text-align: left; cursor: pointer; }
+.nav-link-locked:hover { color: var(--ink); background: var(--surface-2); }
+.nav-lock { margin-left: auto; color: var(--warn); }
+.plan-badge-due { color: var(--warn); font-weight: 700; }
+.plan-lock-icon { color: var(--warn); background: var(--warn-soft); }
+.plan-lock-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 3px; }
+.plan-lock-meta { color: var(--muted); font-size: 10px; }
+.plan-lock-modal p { margin-bottom: 15px; }
+.plan-locked-page .expired-card { max-width: 500px; }
+.plan-locked-page .eyebrow { display: block; color: var(--warn); margin-bottom: 6px; }
+.plan-locked-plan { display: inline-block; margin-top: 3px; padding: 7px 12px; color: var(--warn-ink); background: var(--warn-soft); border-radius: 20px; font-size: 9px; font-weight: 700; }
+.plan-locked-page .expired-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; }
+
+/* Plan catalog, plan picker and pricing page */
+.plan-picker { display: grid; gap: 4px; }
+.inline-admin-action select { max-width: 132px; }
+.plan-expiry-preview { display: block; margin-top: 5px; color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+.plan-expiry-preview b { color: var(--accent); font-weight: 700; }
+.admin-form .plan-expiry-preview { margin-top: 5px; font-size: 10px; }
+
+.pricing-page { display: grid; gap: 20px; }
+.pricing-current { display: flex; align-items: center; gap: 13px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.pricing-current-icon { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; color: var(--accent); background: var(--accent-soft); border-radius: 10px; }
+.pricing-current > div { display: grid; gap: 2px; }
+.pricing-current b { font-size: 12px; }
+.pricing-current small { color: var(--muted); font-size: 10px; }
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 16px; }
+.pricing-card { display: flex; flex-direction: column; gap: 11px; padding: 22px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+.pricing-card-active { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); box-shadow: 0 12px 30px color-mix(in srgb, var(--accent) 12%, transparent); }
+.pricing-card header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pricing-card h2 { margin: 0; font-family: Georgia, "Times New Roman", serif; font-size: 19px; font-weight: 400; letter-spacing: -.4px; }
+.pricing-badge { padding: 4px 9px; color: var(--accent-strong); background: var(--accent-soft); border-radius: 20px; font-size: 8px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; }
+.pricing-price { display: flex; align-items: baseline; gap: 6px; }
+.pricing-price b { font-family: Georgia, "Times New Roman", serif; font-size: 30px; font-weight: 400; letter-spacing: -1px; }
+.pricing-price span { color: var(--muted); font-size: 10px; }
+.pricing-permonth { margin: 0; color: var(--accent); font-size: 10px; font-weight: 700; }
+.pricing-summary { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.pricing-expiry { margin: 0; padding: 8px 10px; color: var(--ink); background: var(--surface-2); border-radius: 8px; font-size: 10px; line-height: 1.5; }
+.pricing-features { display: grid; gap: 6px; margin: 4px 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); list-style: none; }
+.pricing-features li { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 10.5px; }
+.pricing-features svg { flex: 0 0 auto; color: var(--teal); }
+.pricing-plan-state { margin-top: auto; padding: 9px 11px; color: var(--accent); background: var(--accent-wash); border-radius: 8px; font-size: 9.5px; font-weight: 700; line-height: 1.4; text-align: center; }
+.pricing-plan-state.is-active { color: var(--ok-ink); background: var(--ok-soft); }
+.pricing-free { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 18px; align-items: center; }
+.pricing-free h2 { margin: 6px 0 8px; font-family: Georgia, "Times New Roman", serif; font-size: 21px; font-weight: 400; }
+.pricing-free p { margin: 0; max-width: 52ch; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.pricing-free-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 0; padding: 0; list-style: none; }
+.pricing-free-list li { display: flex; align-items: center; gap: 6px; padding: 6px 10px; color: var(--ink); background: var(--surface-2); border: 1px solid var(--line); border-radius: 20px; font-size: 9.5px; }
+.pricing-free-list svg { color: var(--teal); }
+.pricing-footnote { display: flex; align-items: flex-start; gap: 8px; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+.pricing-footnote svg { flex: 0 0 auto; margin-top: 1px; }
+@media (max-width: 760px) {
+  .pricing-free { grid-template-columns: none; }
+  .pricing-grid { grid-template-columns: none; }
+}
+
+/* Automatic renewal emails (admin) */
+.renewal-reminder-copy { margin: 0 0 12px; max-width: 68ch; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.renewal-reminder-actions { display: flex; flex-wrap: wrap; gap: 9px; }
+.renewal-reminder-result { margin: 10px 0 0; color: var(--ok-ink); background: var(--ok-soft); padding: 8px 11px; border-radius: 8px; font-size: 10.5px; line-height: 1.5; }
+
+/* Renewal payments by online transfer */
+.plan-pay { display: grid; gap: 18px; }
+.plan-pay .panel-heading h2 { margin: 5px 0 6px; }
+.plan-pay .panel-heading p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.6; }
+.plan-pay-grid { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: 22px; align-items: start; }
+.plan-pay-details { display: grid; gap: 14px; align-content: start; padding: 16px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; }
+.plan-pay-qr { width: 168px; height: 168px; padding: 8px; object-fit: contain; background: #fff; border: 1px solid var(--line); border-radius: 12px; }
+.plan-pay-qr-empty { display: flex; align-items: center; gap: 8px; width: 168px; height: 168px; padding: 12px; justify-content: center; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; font-size: 10px; }
+.plan-pay-list { display: grid; gap: 9px; margin: 0; }
+.plan-pay-list div { display: grid; gap: 2px; }
+.plan-pay-list dt { color: var(--muted); font-size: 8.5px; letter-spacing: .08em; text-transform: uppercase; }
+.plan-pay-list dd { margin: 0; font-size: 11.5px; font-weight: 600; }
+.plan-pay-note { margin: 0; color: var(--muted); font-size: 10.5px; line-height: 1.6; }
+.plan-pay-form { display: grid; gap: 14px; }
+.plan-pay-form .form-actions span { color: var(--muted); font-size: 9.5px; line-height: 1.5; }
+.plan-pay-history { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.plan-pay-history li { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 9px; font-size: 10.5px; }
+.plan-pay-history small { color: var(--muted); font-size: 9.5px; }
+.plan-pay-settings-row { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 15px; margin-top: 12px; }
+.status-pill.status-pending { color: var(--warn-ink); background: var(--warn-soft); }
+.status-pill.status-approved { color: var(--ok-ink); background: var(--ok-soft); }
+.status-pill.status-rejected { color: var(--danger-ink); background: color-mix(in srgb, var(--danger-ink) 12%, transparent); }
+.admin-payment-sub { display: block; margin-top: 3px; color: var(--muted); font-size: 8.5px; line-height: 1.45; }
+.admin-payment-proof { color: var(--accent); font-size: 9.5px; font-weight: 700; }
+.admin-payment-review { display: grid; gap: 5px; min-width: 150px; }
+.admin-payment-review input { min-height: 25px; padding: 0 7px; font-size: 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.admin-payment-review button { text-align: left; }
+.admin-mini-danger { color: var(--danger-ink); background: color-mix(in srgb, var(--danger-ink) 8%, transparent); border-color: color-mix(in srgb, var(--danger-ink) 18%, var(--line)); }
+.admin-table .status-pill { display: inline-block; margin-top: 4px; }
+@media (max-width: 860px) {
+  .plan-pay-grid { grid-template-columns: none; }
 }

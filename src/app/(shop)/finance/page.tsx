@@ -11,7 +11,7 @@ const ranges: { id: FinanceRange; label: string }[] = [
 ];
 
 export default async function FinancePage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
-  const user = await requireCrafter();
+  const user = await requireCrafter("finance");
   const { range: requested } = await searchParams;
   const range: FinanceRange = requested === "week" || requested === "seven" ? requested : "month";
   const { from, to } = financeWindow(range, new Date());

@@ -14,7 +14,7 @@ import {
   PAYMENT_STATUSES,
 } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
-import { requireCrafter } from "@/lib/session";
+import { requirePlanFeature } from "@/lib/session";
 
 const lineSchema = z.object({
   kind: z.enum(["product", "bundle", "digital"]).default("product"),
@@ -50,7 +50,7 @@ function moneyOrZero(value: string) {
 }
 
 export async function saveOrder(payload: unknown) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("orders");
   const parsed = orderSchema.safeParse(payload);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the order details.");
   const input = parsed.data;
@@ -191,7 +191,7 @@ export async function saveOrder(payload: unknown) {
 }
 
 export async function moveOrderStage(orderId: string, stage: string) {
-  const user = await requireCrafter();
+  const user = await requirePlanFeature("orders");
   if (!isOrderStage(stage)) throw new Error("Choose a stage from the board.");
 
   const order = await prisma.shopOrder.findFirst({ where: { id: orderId, userId: user.id } });

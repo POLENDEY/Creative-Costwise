@@ -7,6 +7,8 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { addPlanMonths, PLAN_KEYS, planMonths } from "@/lib/plans";
+import { runRenewalReminders } from "@/lib/renewal-reminders";
 
 async function requireAdmin() {
   const session = await getServerSession(authOptions);
@@ -19,17 +21,8 @@ async function requireAdmin() {
 const passwordSchema = z.object({
   name: z.string().trim().min(2).max(100),
   email: z.string().email(),
-  plan: z.enum(["quarterly", "annual"]),
+  plan: z.enum(PLAN_KEYS),
 });
-
-function addCalendarMonths(date: Date, months: number) {
-  const result = new Date(date);
-  const originalDay = result.getDate();
-  result.setMonth(result.getMonth() + months, 1);
-  const lastDay = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
-  result.setDate(Math.min(originalDay, lastDay));
-  return result;
-}
 
 export async function createCrafter(formData: FormData) {
   await requireAdmin();
@@ -45,7 +38,7 @@ export async function createCrafter(formData: FormData) {
   const temporaryPassword = crypto.randomUUID().replace(/-/g, "").slice(0, 12);
   const passwordHash = await bcrypt.hash(temporaryPassword, 12);
   const now = new Date();
-  const expiresAt = addCalendarMonths(now, parsed.data.plan === "annual" ? 12 : 3);
+  const expiresAt = addPlanMonths(now, planMonths(parsed.data.plan));
 
   await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
@@ -65,6 +58,14 @@ export async function createCrafter(formData: FormData) {
     crafterName: parsed.data.name,
     crafterEmail: parsed.data.email,
   };
+}
+
+/** Sends the automatic renewal email to every crafter whose plan has ended. */
+export async function sendRenewalRemindersNow() {
+  await requireAdmin();
+  const result = await runRenewalReminders();
+  revalidatePath("/admin/users");
+  return result;
 }
 
 const changePasswordSchema = z.object({
@@ -96,7 +97,7 @@ export async function changePassword(formData: FormData) {
 const accessActionSchema = z.object({
   userId: z.string().min(1),
   action: z.enum(["renew", "change-plan", "disable", "enable"]),
-  plan: z.enum(["quarterly", "annual"]).optional(),
+  plan: z.enum(PLAN_KEYS).optional(),
 });
 
 export async function updateCrafterAccess(formData: FormData) {
@@ -116,13 +117,29 @@ export async function updateCrafterAccess(formData: FormData) {
   if (parsed.data.action === "renew") {
     const now = new Date();
     const renewalStart = user.expiresAt && user.expiresAt > now ? user.expiresAt : now;
+    // The new term clears the reminder marker, so automatic renewal email only
+    // starts again after this fresh term has ended.
     await prisma.user.update({
       where: { id: user.id },
-      data: { expiresAt: addCalendarMonths(renewalStart, user.plan === "annual" ? 12 : 3) },
+      data: {
+        expiresAt: addPlanMonths(renewalStart, planMonths(user.plan)),
+        renewalReminderFor: null,
+        renewalReminderSentAt: null,
+      },
     });
   } else if (parsed.data.action === "change-plan") {
     if (!parsed.data.plan) throw new Error("Choose a plan before changing access.");
-    await prisma.user.update({ where: { id: user.id }, data: { plan: parsed.data.plan } });
+    // Pick the plan and give it its own fresh term, so the shown expiry always
+    // matches the plan that was chosen.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        plan: parsed.data.plan,
+        expiresAt: addPlanMonths(new Date(), planMonths(parsed.data.plan)),
+        renewalReminderFor: null,
+        renewalReminderSentAt: null,
+      },
+    });
   } else if (parsed.data.action === "disable") {
     await prisma.user.update({ where: { id: user.id }, data: { disabledAt: new Date() } });
   } else {

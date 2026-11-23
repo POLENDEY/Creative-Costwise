@@ -5,7 +5,7 @@ import { getProductCostBreakdown } from "@/lib/product-breakdown";
 import { PurchaseOrderWorkspace } from "@/components/purchase-order-workspace";
 
 export default async function PurchaseOrdersPage() {
-  const user = await requireCrafter();
+  const user = await requireCrafter("purchaseOrders");
   const [settings, priceSets, purchaseOrders, savedDraft] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
     prisma.priceSet.findMany({
