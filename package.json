@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint src prisma",
     "test": "vitest run",
     "db:push": "prisma db push",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:seed": "prisma db seed",
     "postinstall": "prisma generate"
   },
   "dependencies": {
@@ -39,6 +39,9 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vitest": "^4.0.8"
+  },
+  "prisma": {
+    "seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts"
   },
   "overrides": {
     "deepmerge-ts": "^8.0.0",

@@ -1,5 +1,29 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
+import { assertProjectDatabase } from "../src/lib/project-database";
+
+function loadLocalEnv() {
+  const file = path.join(process.cwd(), ".env");
+  if (!fs.existsSync(file)) return;
+  for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const separator = trimmed.indexOf("=");
+    if (separator <= 0) continue;
+    const key = trimmed.slice(0, separator).trim();
+    if (process.env[key]) continue;
+    let value = trimmed.slice(separator + 1).trim();
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    process.env[key] = value;
+  }
+}
+
+loadLocalEnv();
+assertProjectDatabase();
 
 const prisma = new PrismaClient();
 

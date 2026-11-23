@@ -21,18 +21,31 @@ function escapeHtml(value: string) {
   })[character] ?? character);
 }
 
+function smtpPassword() {
+  return process.env.SMTP_PASSWORD || process.env.SMTP_PASS || "";
+}
+
 function createTransport() {
+  const user = process.env.SMTP_USER?.trim();
+  const pass = smtpPassword();
+  if (!user || !pass) return null;
+
+  const service = process.env.SMTP_SERVICE?.trim().toLowerCase();
+  if (service === "gmail") {
+    return nodemailer.createTransport({ service: "gmail", auth: { user, pass } });
+  }
+
   const host = process.env.SMTP_HOST?.trim();
   const port = Number(process.env.SMTP_PORT ?? 587);
-  const user = process.env.SMTP_USER?.trim();
-  const pass = process.env.SMTP_PASSWORD;
-  if (!host || !user || !pass || !Number.isInteger(port) || port < 1 || port > 65535) {
-    return null;
-  }
+  if (!host || !Number.isInteger(port) || port < 1 || port > 65535) return null;
   const secure = process.env.SMTP_SECURE
     ? process.env.SMTP_SECURE.toLowerCase() === "true"
     : port === 465;
   return nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+}
+
+function mailFromAddress() {
+  return process.env.MAIL_FROM?.trim() || process.env.EMAIL_FROM?.trim() || process.env.SMTP_USER?.trim() || "";
 }
 
 export async function sendPurchaseOrderEmail(input: {
@@ -50,7 +63,7 @@ export async function sendPurchaseOrderEmail(input: {
   actionPath: "/admin/orders" | "/purchase-orders";
 }) {
   const transport = createTransport();
-  const from = process.env.MAIL_FROM?.trim() || process.env.SMTP_USER?.trim();
+  const from = mailFromAddress();
   if (!transport || !from) {
     return { sent: false, reason: "Email is not configured; the request is still available in the website inbox." };
   }
@@ -76,7 +89,9 @@ export async function sendPurchaseOrderEmail(input: {
       from,
       to: input.to,
       replyTo: input.crafterEmail,
-      subject: `Purchase request ${input.purchaseOrderId.slice(-8)} — ${input.statusLabel}`,
+      subject: input.statusLabel === "received"
+        ? `Transaction received — purchase request ${input.purchaseOrderId.slice(-8).toUpperCase()}`
+        : `Purchase request ${input.purchaseOrderId.slice(-8).toUpperCase()} — ${input.statusLabel}`,
       text: `Hello ${input.recipientName},\n\nPurchase request ${input.purchaseOrderId} from ${input.crafterName} (${input.crafterEmail}) is ${input.statusLabel}.\n\n${rowsText}\n\nTotal: ${formatMoney(input.totalMinor, currency)}${input.note ? `\n\nCrafter note: ${input.note}` : ""}${responseText}\n\nOpen the request: ${actionUrl}`,
       html: `<div style="font-family:Arial,sans-serif;max-width:680px;margin:auto;color:#312a33"><p>Hello ${escapeHtml(input.recipientName)},</p><p>Purchase request <b>${escapeHtml(input.purchaseOrderId)}</b> from <b>${escapeHtml(input.crafterName)}</b> (${escapeHtml(input.crafterEmail)}) is <b>${escapeHtml(input.statusLabel)}</b>.</p><table style="width:100%;border-collapse:collapse"><thead><tr><th align="left" style="padding:10px">Product</th><th align="left" style="padding:10px">Qty</th><th align="left" style="padding:10px">Line total</th></tr></thead><tbody>${rowsHtml}</tbody></table><p><b>Total: ${formatMoney(input.totalMinor, currency)}</b></p>${input.note ? `<p>Crafter note: ${escapeHtml(input.note)}</p>` : ""}${responseHtml}<p><a href="${escapeHtml(actionUrl)}">Open purchase requests</a></p></div>`,
     });
@@ -88,7 +103,10 @@ export async function sendPurchaseOrderEmail(input: {
 }
 
 export function getAdminNotificationAddress() {
-  return process.env.ADMIN_NOTIFICATION_EMAIL?.trim() || process.env.ADMIN_EMAIL?.trim() || "";
+  return process.env.ADMIN_NOTIFICATION_EMAIL?.trim()
+    || process.env.INQUIRY_NOTIFY_TO?.trim()
+    || process.env.ADMIN_EMAIL?.trim()
+    || "";
 }
 
 function emailBreakdown(breakdownJson: string, currency: ReturnType<typeof resolveCurrency>) {

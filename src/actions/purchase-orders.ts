@@ -178,7 +178,7 @@ export async function submitPurchaseOrder(payload: unknown) {
         crafterEmail: crafter.email,
         currency,
         note: purchaseOrder.note,
-        statusLabel: "submitted",
+        statusLabel: "received",
         lines: purchaseOrder.lines,
         totalMinor,
         actionPath: "/admin/orders",

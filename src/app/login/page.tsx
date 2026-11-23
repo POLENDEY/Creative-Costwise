@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
-import { ArrowRight, Eye, EyeOff, Sparkles } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -19,8 +19,9 @@ export default function LoginPage() {
       redirect: false,
     });
     if (result?.error) {
-      setError("That email and password combination didn’t match.");
+      setError("That email and password do not match. Check both and try again.");
       setBusy(false);
+      document.getElementById("email")?.focus();
       return;
     }
     window.location.assign("/");
@@ -28,47 +29,85 @@ export default function LoginPage() {
 
   return (
     <main className="login-screen">
-      <section className="login-brand-panel">
-        <div className="login-brand-copy">
-          <div className="brand-lockup">
-            <Image src="/brand-logo.png" alt="Creative Costwise" width={150} height={150} priority />
-            <span className="brand-name">Creative <b>Costwise</b></span>
-          </div>
-          <div className="login-message">
-            <span className="eyebrow"><Sparkles size={14} /> MADE FOR YOUR MAKING</span>
-            <h1>Make room for the <em>good ideas.</em></h1>
-            <p>Know what it costs. Price with confidence. Keep your creative business moving.</p>
-          </div>
-          <div className="login-footnote">A little more clarity, for every little thing you create.</div>
-        </div>
-        <div className="login-orbit orbit-one" />
-        <div className="login-orbit orbit-two" />
-        <div className="login-orbit orbit-three" />
-      </section>
-      <section className="login-form-panel">
-        <div className="login-form-wrap">
-          <div className="mobile-brand"><Image src="/brand-logo.png" alt="" width={54} height={54} /><b>Creative Costwise</b></div>
-          <span className="eyebrow">WELCOME BACK</span>
-          <h2>Your ideas have a home.</h2>
-          <p className="muted">Sign in to pick up right where you left off.</p>
-          <form action={submit} className="login-form">
-            <label htmlFor="email">Email address</label>
-            <input id="email" name="email" type="email" placeholder="you@yourbusiness.com" autoComplete="email" required />
-            <div className="field-label-row"><label htmlFor="password">Password</label></div>
-            <div className="password-input">
-              <input id="password" name="password" type={showPassword ? "text" : "password"} placeholder="Enter your password" autoComplete="current-password" required />
-              <button type="button" className="icon-button reveal-button" onClick={() => setShowPassword((value) => !value)} aria-label={showPassword ? "Hide password" : "Show password"}>
-                {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-              </button>
+      <div className="login-layout">
+        <section className="login-brand-panel" aria-label="About Creative Costwise">
+          <div className="login-brand-copy">
+            <div className="brand-lockup">
+              <span className="login-brand-mark">
+                <Image src="/brand-logo.png" alt="" width={64} height={64} priority />
+              </span>
+              <span className="brand-name">Creative Costwise</span>
             </div>
-            {error && <p className="form-error" role="alert">{error}</p>}
-            <button type="submit" className="button button-primary login-submit" disabled={busy}>
-              {busy ? "Signing you in…" : "Sign in"} <ArrowRight size={17} />
-            </button>
-          </form>
-          <div className="login-help"><span>Need a hand?</span> Ask your toolkit admin for access.</div>
-        </div>
-      </section>
+            <div className="login-message">
+              <h1>Cost the work, then set the price.</h1>
+              <p>Materials, printing, and labor stay together, so a price is a decision you can explain.</p>
+            </div>
+            <ul className="login-points">
+              <li>Material cost per piece</li>
+              <li>Print cost per sheet</li>
+              <li>Retail and bulk prices</li>
+            </ul>
+          </div>
+        </section>
+        <section className="login-form-panel">
+          <div className="login-form-wrap">
+            <div className="mobile-brand">
+              <Image src="/brand-logo.png" alt="" width={40} height={40} />
+              <b>Creative Costwise</b>
+            </div>
+            <h2 id="sign-in-heading">Sign in</h2>
+            <p className="muted">Use the email and password from your toolkit admin.</p>
+            <form className="login-form" action={submit} aria-labelledby="sign-in-heading" aria-busy={busy}>
+              <div className="login-field">
+                <label htmlFor="email">Email</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  autoCorrect="off"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  enterKeyHint="next"
+                  required
+                  aria-invalid={error ? true : undefined}
+                  aria-describedby={error ? "login-error" : undefined}
+                />
+              </div>
+              <div className="login-field">
+                <label htmlFor="password">Password</label>
+                <div className="password-input">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    enterKeyHint="done"
+                    required
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? "login-error" : undefined}
+                  />
+                  <button
+                    type="button"
+                    className="icon-button reveal-button"
+                    aria-pressed={showPassword}
+                    aria-controls="password"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
+                  </button>
+                </div>
+              </div>
+              {error ? <p id="login-error" className="form-error" role="alert">{error}</p> : null}
+              <button type="submit" className="button button-primary login-submit" disabled={busy}>
+                {busy ? "Signing in…" : "Sign in"}
+              </button>
+            </form>
+            <p className="login-help">Need access? Ask your toolkit admin.</p>
+          </div>
+        </section>
+      </div>
     </main>
   );
 }

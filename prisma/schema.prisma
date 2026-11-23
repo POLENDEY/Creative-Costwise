@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id                 String        @id @default(cuid())
+  id                 String        @id @default(cuid()) @map("_id")
   name               String
   email              String        @unique
   passwordHash       String
@@ -26,10 +26,12 @@ model User {
   costingTabs        CostingTab[]
   purchaseOrders     PurchaseOrder[]
   notifications      Notification[]
+
+  @@index([role, createdAt])
 }
 
 model ShopSettings {
-  userId                     String   @id
+  userId                     String   @id @map("_id")
   currency                   String   @default("PHP")
   theme                      String   @default("pink")
   colorScheme                String   @default("light")
@@ -41,24 +43,24 @@ model ShopSettings {
   paymentAccountName         String   @default("")
   bankDetails                String   @default("")
   gcashNumber                String   @default("")
-  defaultLossPercent         Decimal  @default(3)
+  defaultLossPercent         Float  @default(3)
   defaultOperationalFeeMinor Int      @default(1000)
-  defaultLaborPercent        Decimal  @default(100)
-  markupRetailPercent        Decimal  @default(100)
-  markupBulkPercent          Decimal  @default(50)
-  markupPromoPercent         Decimal  @default(30)
-  markupLoyalPercent         Decimal  @default(40)
+  defaultLaborPercent        Float  @default(100)
+  markupRetailPercent        Float  @default(100)
+  markupBulkPercent          Float  @default(50)
+  markupPromoPercent         Float  @default(30)
+  markupLoyalPercent         Float  @default(40)
   masterSheetUrl             String   @default("")
   checklistJson              String   @default("{}")
   user                       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Material {
-  id                String   @id @default(cuid())
+  id                String   @id @default(cuid()) @map("_id")
   userId            String
   category          String   @default("Uncategorized")
   name              String
-  piecesPerPack     Decimal
+  piecesPerPack     Float
   pricePerPackMinor Int
   gsm               String   @default("")
   thickness         String   @default("")
@@ -66,8 +68,8 @@ model Material {
   finish            String   @default("matte")
   finishOther       String   @default("")
   unitLabel         String   @default("piece")
-  quantityOnHand    Decimal  @default(0)
-  lowStockAlert     Decimal?
+  quantityOnHand    Float  @default(0)
+  lowStockAlert     Float?
   supplierUrl       String   @default("")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -76,17 +78,18 @@ model Material {
 
   @@index([userId, category])
   @@index([userId, name])
+  @@index([userId, updatedAt])
 }
 
 model Printer {
-  id                 String   @id @default(cuid())
+  id                 String   @id @default(cuid()) @map("_id")
   userId             String
   name               String
   inkType            String   @default("dye")
   colorInkPriceMinor Int      @default(0)
-  colorPageYield     Decimal
+  colorPageYield     Float
   blackInkPriceMinor Int      @default(0)
-  blackPageYield     Decimal
+  blackPageYield     Float
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
   user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -96,18 +99,18 @@ model Printer {
 }
 
 model CostingTab {
-  id                   String                @id @default(cuid())
+  id                   String                @id @default(cuid()) @map("_id")
   userId               String
   name                 String
-  overagePercent       Decimal               @default(0)
-  lossPercent          Decimal               @default(3)
+  overagePercent       Float               @default(0)
+  lossPercent          Float               @default(3)
   operationalFeeMinor  Int                   @default(1000)
-  laborPercent         Decimal               @default(100)
+  laborPercent         Float               @default(100)
   packagingCostMinor   Int                   @default(0)
-  markupRetailPercent  Decimal               @default(100)
-  markupBulkPercent    Decimal               @default(50)
-  markupPromoPercent   Decimal               @default(30)
-  markupLoyalPercent   Decimal               @default(40)
+  markupRetailPercent  Float               @default(100)
+  markupBulkPercent    Float               @default(50)
+  markupPromoPercent   Float               @default(30)
+  markupLoyalPercent   Float               @default(40)
   createdAt            DateTime              @default(now())
   updatedAt            DateTime              @updatedAt
   user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -119,30 +122,36 @@ model CostingTab {
 }
 
 model CostingMaterialLine {
-  id             String     @id @default(cuid())
+  id             String     @id @default(cuid()) @map("_id")
   costingTabId   String
   materialId     String
-  unitsUsed      Decimal
-  finishedPieces Decimal
+  unitsUsed      Float
+  finishedPieces Float
   costingTab     CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
   material       Material   @relation(fields: [materialId], references: [id], onDelete: Restrict)
+
+  @@index([costingTabId])
+  @@index([materialId])
 }
 
 model CostingPrintLine {
-  id             String     @id @default(cuid())
+  id             String     @id @default(cuid()) @map("_id")
   costingTabId   String
   printerId      String
   paperSize      String     @default("A4")
   quality        String     @default("standard")
   coverage       String     @default("normal_color")
-  sheetCount     Decimal    @default(1)
-  finishedPieces Decimal    @default(1)
+  sheetCount     Float    @default(1)
+  finishedPieces Float    @default(1)
   costingTab     CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
   printer        Printer    @relation(fields: [printerId], references: [id], onDelete: Restrict)
+
+  @@index([costingTabId])
+  @@index([printerId])
 }
 
 model PriceSet {
-  id                  String     @id @default(cuid())
+  id                  String     @id @default(cuid()) @map("_id")
   userId              String
   costingTabId        String
   name                String
@@ -155,10 +164,12 @@ model PriceSet {
   costingTab          CostingTab @relation(fields: [costingTabId], references: [id], onDelete: Cascade)
 
   @@index([userId, category])
+  @@index([userId, updatedAt])
+  @@index([costingTabId])
 }
 
 model PurchaseOrder {
-  id            String             @id @default(cuid())
+  id            String             @id @default(cuid()) @map("_id")
   userId        String
   status        String             @default("pending")
   currency      String             @default("PHP")
@@ -172,10 +183,11 @@ model PurchaseOrder {
 
   @@index([status, createdAt])
   @@index([userId, createdAt])
+  @@index([userId, status])
 }
 
 model PurchaseOrderLine {
-  id                    String               @id @default(cuid())
+  id                    String               @id @default(cuid()) @map("_id")
   purchaseOrderId       String
   priceSetId            String?
   productName           String
@@ -192,10 +204,11 @@ model PurchaseOrderLine {
   inventoryItem         AdminInventoryItem?
 
   @@index([purchaseOrderId])
+  @@index([priceSetId])
 }
 
 model AdminInventoryItem {
-  id                      String            @id @default(cuid())
+  id                      String            @id @default(cuid()) @map("_id")
   purchaseOrderLineId     String            @unique
   crafterName             String
   crafterEmail            String
@@ -212,10 +225,11 @@ model AdminInventoryItem {
   purchaseOrderLine       PurchaseOrderLine @relation(fields: [purchaseOrderLineId], references: [id], onDelete: Restrict)
 
   @@index([category, productName])
+  @@index([updatedAt])
 }
 
 model Notification {
-  id        String   @id @default(cuid())
+  id        String   @id @default(cuid()) @map("_id")
   userId    String
   title     String
   message   String
