@@ -31,7 +31,7 @@ The seed command prints the local demo credentials. Defaults are `admin@local.te
 - Crafter purchase requests with printable cost breakdowns; admin request review, email notifications/replies when SMTP is configured, and an admin-only inventory catalog.
 - Admin module tabs and sign-out, account-labeled temporary passwords, self-service password changes, and a one-tap saved theme switch.
 - Logo uploads accept JPEG, PNG, and WebP, validate their content, then convert and store them as AVIF files.
-- Per-crafter MongoDB records for materials, printers, costing tabs, and price sets. The server pings `creative_costwise` every 10 seconds while the app is running.
+- Per-crafter MongoDB records for materials, starred categories, stock movements, expenses, printers, printer supplies, print template links, costing tabs, price sets, customers, and orders. The server pings `creative_costwise` every 10 seconds while the app is running.
 - Material pack cost per unit, low-stock indicators, printer color/black base costs, loss/overage/labor/packaging calculations, and suggested retail/bulk/promo/loyal prices.
 - PHP/USD formatting and nine accent themes with light/dark color schemes.
 - A responsive dashboard, getting-started guide, and admin-created crafter accounts.

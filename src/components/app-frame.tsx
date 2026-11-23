@@ -10,11 +10,17 @@ import { saveColorScheme } from "@/actions/shop";
 import { NotificationBell, type AppNotification } from "@/components/notification-bell";
 import {
   ArrowUpRight,
+  BadgePercent,
   Calculator,
   ChevronDown,
   CircleHelp,
+  ClipboardList,
+  Gift,
+  Link2,
   LayoutDashboard,
   FileText,
+  Receipt,
+  Wallet,
   Menu,
   Moon,
   Package,
@@ -23,6 +29,7 @@ import {
   Sparkles,
   Sun,
   Tag,
+  Users,
   X,
 } from "lucide-react";
 
@@ -32,6 +39,13 @@ const primaryLinks = [
   { href: "/print-hub", label: "Print hub", icon: Printer },
   { href: "/costing", label: "Product costing", icon: Calculator },
   { href: "/prices", label: "Price sets", icon: Tag },
+  { href: "/bundles", label: "Bundles", icon: Gift },
+  { href: "/promotions", label: "Promotions", icon: BadgePercent },
+  { href: "/digital", label: "Digital", icon: Link2 },
+  { href: "/customers", label: "Customers", icon: Users },
+  { href: "/orders", label: "Orders", icon: ClipboardList },
+  { href: "/documents", label: "Documents", icon: Receipt },
+  { href: "/finance", label: "Finance", icon: Wallet },
   { href: "/purchase-orders", label: "Purchase orders", icon: FileText },
 ];
 
@@ -82,7 +96,7 @@ export function AppFrame({
 
   return (
     <div className="app-frame">
-      <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
+      <aside className={`sidebar no-print ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
           <Link href="/dashboard" className="brand-lockup">
             <Image src="/brand-logo.png" alt="" width={50} height={50} priority />
@@ -126,7 +140,7 @@ export function AppFrame({
       </aside>
       {menuOpen && <button className="sidebar-scrim" onClick={() => setMenuOpen(false)} aria-label="Close navigation" />}
       <main className="app-main">
-        <header className="topbar">
+        <header className="topbar no-print">
           <button className="icon-button mobile-menu-button" onClick={() => setMenuOpen(true)} aria-label="Open navigation"><Menu size={21} /></button>
           <div className="topbar-context"><span className="context-dot" /> Your creative business, in good hands.</div>
           <NotificationBell initialNotifications={notifications} />

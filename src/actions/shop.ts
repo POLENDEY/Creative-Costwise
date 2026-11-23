@@ -189,9 +189,14 @@ export async function createMaterial(formData: FormData) {
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the material details.");
 
-  await prisma.material.create({
-    data: { userId: user.id, ...parsed.data },
-  });
+  await prisma.$transaction([
+    prisma.material.create({ data: { userId: user.id, ...parsed.data } }),
+    prisma.materialCategory.upsert({
+      where: { userId_name: { userId: user.id, name: parsed.data.category } },
+      create: { userId: user.id, name: parsed.data.category },
+      update: {},
+    }),
+  ]);
   revalidatePath("/materials");
   revalidatePath("/dashboard");
 }

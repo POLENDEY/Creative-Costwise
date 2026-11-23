@@ -16,7 +16,7 @@ const READ_OPERATIONS = new Set([
   "aggregate",
   "groupBy",
 ]);
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 5;
 const CACHE_TTL_MS = 20_000;
 
 const bypassReadCache = new AsyncLocalStorage<true>();
@@ -76,7 +76,13 @@ function createPrisma() {
   const transaction = extended.$transaction.bind(extended);
   Object.defineProperty(extended, "$transaction", {
     configurable: true,
-    value: ((...args: unknown[]) => bypassReadCache.run(true, () => transaction(...(args as [never])))) as typeof extended.$transaction,
+    value: ((async (...args: unknown[]) => {
+      try {
+        return await bypassReadCache.run(true, () => transaction(...(args as [never])));
+      } finally {
+        clearReadCache();
+      }
+    }) as typeof extended.$transaction),
   });
   return extended;
 }

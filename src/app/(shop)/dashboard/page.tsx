@@ -11,6 +11,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { calculateMaterialCostPerPiece } from "@/lib/costing";
+import { financeSummary, financeWindow } from "@/lib/finance";
 import { formatMoney, resolveCurrency } from "@/lib/money";
 import { checklistSteps, parseChecklist } from "@/lib/checklist";
 import { toggleChecklistStep } from "@/actions/shop";
@@ -18,13 +19,17 @@ import { CurrencyMark } from "@/components/currency-mark";
 
 export default async function DashboardPage() {
   const user = await requireCrafter();
-  const [settings, materials, printers, tabs, priceSets] = await Promise.all([
+  const month = financeWindow("month", new Date());
+  const [settings, materials, printers, tabs, priceSets, sales, expenses] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
     prisma.material.findMany({ where: { userId: user.id }, orderBy: { updatedAt: "desc" } }),
     prisma.printer.count({ where: { userId: user.id } }),
     prisma.costingTab.findMany({ where: { userId: user.id }, orderBy: { updatedAt: "desc" }, take: 3 }),
     prisma.priceSet.findMany({ where: { userId: user.id }, orderBy: { updatedAt: "desc" }, take: 3 }),
+    prisma.sale.findMany({ where: { userId: user.id, recognizedOn: { gte: month.from, lte: month.to } }, select: { amountMinor: true, recognizedOn: true } }),
+    prisma.expense.findMany({ where: { userId: user.id, occurredOn: { gte: month.from, lte: month.to } }, select: { amountMinor: true, occurredOn: true } }),
   ]);
+  const monthFinance = financeSummary({ from: month.from, to: month.to, sales, expenses });
   const currency = resolveCurrency(settings?.currency);
   const lowStock = materials.filter(
     (material) => material.lowStockAlert !== null && Number(material.quantityOnHand) <= Number(material.lowStockAlert),
@@ -71,6 +76,12 @@ export default async function DashboardPage() {
           <b className="overview-value">{priceSets.length}</b><span className="overview-label">saved price sets</span>
           <div className="overview-card-bottom"><Link href="/prices">Browse prices <ArrowUpRight size={13} /></Link></div>
         </article>
+      </section>
+
+      <section className="material-summary-row">
+        <Link href="/finance" className="material-summary-card"><span><b>{formatMoney(monthFinance.revenueMinor, currency)}</b><small>revenue this month</small></span></Link>
+        <Link href="/finance" className="material-summary-card"><span><b>{formatMoney(monthFinance.expenseMinor, currency)}</b><small>expenses this month</small></span></Link>
+        <Link href="/finance" className="material-summary-card"><span><b>{formatMoney(monthFinance.profitMinor, currency)}</b><small>revenue minus expenses</small></span></Link>
       </section>
 
       <section className="dashboard-lower-grid">

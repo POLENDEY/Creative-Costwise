@@ -31,6 +31,7 @@ export type CostingInput = {
   markups: { retail: number; bulk: number; promo: number; loyal: number };
 };
 
+// Provisional until clarifications C-04 through C-08 are confirmed.
 const paperSizeMultiplier = { A5: 0.5, A4: 1, LETTER: 1, LEGAL: 1.2, A3: 2 } as const;
 const qualityMultiplier = { draft: 0.6, standard: 1, best: 1.5 } as const;
 const coverageMultiplier = {

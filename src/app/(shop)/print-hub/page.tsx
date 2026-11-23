@@ -1,5 +1,7 @@
-import { ArrowUpRight, Info, Plus, Printer, Sparkles } from "lucide-react";
+import { ArrowUpRight, Info, Link2, Plus, Printer, Sparkles } from "lucide-react";
 import { createPrinter } from "@/actions/shop";
+import { createPrintTemplate } from "@/actions/print-hub";
+import { SupplyPurchaseForm } from "@/components/supply-purchase-form";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { calculatePrinterBaseCosts } from "@/lib/costing";
@@ -7,9 +9,11 @@ import { formatMoney, resolveCurrency } from "@/lib/money";
 
 export default async function PrintHubPage() {
   const user = await requireCrafter();
-  const [settings, printers] = await Promise.all([
+  const [settings, printers, supplies, templates] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
     prisma.printer.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
+    prisma.printerSupply.findMany({ where: { userId: user.id }, orderBy: { updatedAt: "desc" } }),
+    prisma.printTemplate.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
   ]);
   const currency = resolveCurrency(settings?.currency);
 
@@ -44,6 +48,21 @@ export default async function PrintHubPage() {
           <div className="form-actions"><span><Sparkles size={14} /> You can update these estimates anytime.</span><button className="button button-primary" type="submit">Save printer <ArrowUpRight size={15} /></button></div>
         </form>
       </details>
+      <section className="panel">
+        <div className="panel-heading"><div><span className="eyebrow">SUPPLIES</span><h2>Printer purchases</h2></div></div>
+        {supplies.length ? <ul className="movement-list">{supplies.map((supply) => <li key={supply.id}><b>{supply.name}</b><span>{formatMoney(supply.lastPriceMinor, currency)} last recorded</span>{supply.supplierUrl ? <a href={supply.supplierUrl} target="_blank" rel="noreferrer">Supplier</a> : null}</li>)}</ul> : <p className="empty-copy">Record ink, paper, or other printer supplies. Each save creates one expense.</p>}
+        <SupplyPurchaseForm currency={currency} />
+      </section>
+      <section className="panel">
+        <div className="panel-heading"><div><span className="eyebrow">TEMPLATES</span><h2>External printing links</h2></div></div>
+        {templates.length ? <ul className="movement-list">{templates.map((template) => <li key={template.id}><b>{template.name}</b><a href={template.url} target="_blank" rel="noreferrer"><Link2 size={14} /> Open template</a>{template.note ? <small>{template.note}</small> : null}</li>)}</ul> : <p className="empty-copy">Save a Canva, Google Drive, or other template link for the prints you repeat.</p>}
+        <form action={createPrintTemplate} className="form-grid">
+          <label className="field">Template name<input name="name" required maxLength={100} /></label>
+          <label className="field">Link<input name="url" type="url" required placeholder="https://" /></label>
+          <label className="field field-span-2">Note<input name="note" maxLength={200} /></label>
+          <div className="form-actions"><span>Links stay in your print hub. They are not uploaded files.</span><button className="button button-primary" type="submit">Save template</button></div>
+        </form>
+      </section>
     </div>
   );
 }

@@ -240,3 +240,251 @@ model Notification {
 
   @@index([userId, readAt, createdAt])
 }
+
+model MaterialCategory {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String
+  name      String
+  starred   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, starred])
+}
+
+model Expense {
+  id            String   @id @default(cuid()) @map("_id")
+  userId        String
+  occurredOn    DateTime @default(now())
+  amountMinor   Int
+  frequency     String   @default("once")
+  category      String
+  paymentMethod String
+  description   String
+  note          String   @default("")
+  sourceKey     String   @unique
+  createdAt     DateTime @default(now())
+
+  @@index([userId, occurredOn])
+  @@index([userId, category])
+}
+
+model InventoryMovement {
+  id             String   @id @default(cuid()) @map("_id")
+  userId         String
+  materialId     String
+  kind           String
+  quantityBefore Float
+  quantityAfter  Float
+  note           String   @default("")
+  expenseId      String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId, materialId, createdAt])
+  @@index([expenseId])
+}
+
+model PrinterSupply {
+  id             String   @id @default(cuid()) @map("_id")
+  userId         String
+  name           String
+  supplierUrl    String   @default("")
+  lastPriceMinor Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([userId, name])
+  @@index([userId, updatedAt])
+}
+
+model PrintTemplate {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String
+  name      String
+  url       String
+  note      String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([userId, name])
+}
+
+model Customer {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String
+  name      String
+  phone     String   @default("")
+  email     String   @default("")
+  address   String   @default("")
+  notes     String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, name])
+  @@index([userId, email])
+}
+
+model ShopOrder {
+  id               String    @id @default(cuid()) @map("_id")
+  userId           String
+  customerId       String    @default("")
+  customerName     String
+  customerPhone    String    @default("")
+  customerEmail    String    @default("")
+  customerAddress  String    @default("")
+  stage            String    @default("inquiry")
+  paymentStatus    String    @default("unpaid")
+  deliveryMethod   String    @default("pickup")
+  discountMinor    Int       @default(0)
+  shippingMinor    Int       @default(0)
+  currency         String    @default("PHP")
+  dueOn            DateTime?
+  followUpOn       DateTime?
+  note             String    @default("")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, stage, updatedAt])
+  @@index([userId, dueOn])
+}
+
+model ShopOrderLine {
+  id                  String @id @default(cuid()) @map("_id")
+  orderId             String
+  userId              String
+  kind                String @default("product")
+  priceSetId          String @default("")
+  sourceId            String @default("")
+  label               String
+  priceOption         String
+  quantity            Float
+  unitPriceMinor      Int
+  productionCostMinor Int
+
+  @@index([orderId])
+  @@index([userId, orderId])
+  @@index([sourceId])
+}
+
+model Bundle {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String
+  name       String
+  priceMinor Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, name])
+  @@index([userId, updatedAt])
+}
+
+model BundleItem {
+  id         String @id @default(cuid()) @map("_id")
+  bundleId   String
+  userId     String
+  priceSetId String
+  quantity   Float
+
+  @@index([bundleId])
+  @@index([userId, bundleId])
+}
+
+model Promotion {
+  id            String   @id @default(cuid()) @map("_id")
+  userId        String
+  code          String   @default("")
+  originalMinor Int
+  kind          String
+  discountMinor Int
+  saleMinor     Int
+  note          String   @default("")
+  upcomingNote  String   @default("")
+  createdAt     DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model DigitalProduct {
+  id         String   @id @default(cuid()) @map("_id")
+  userId     String
+  name       String
+  priceMinor Int
+  url        String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId, name])
+  @@index([userId, updatedAt])
+}
+
+model ShopOrderStatus {
+  id        String   @id @default(cuid()) @map("_id")
+  orderId   String
+  userId    String
+  fromStage String   @default("")
+  toStage   String
+  createdAt DateTime @default(now())
+
+  @@index([orderId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model Sale {
+  id           String   @id @default(cuid()) @map("_id")
+  userId       String
+  orderId      String   @unique
+  amountMinor  Int
+  currency     String
+  recognizedOn DateTime @default(now())
+  createdAt    DateTime @default(now())
+
+  @@index([userId, recognizedOn])
+}
+
+model BusinessDocument {
+  id                 String   @id @default(cuid()) @map("_id")
+  userId             String
+  orderId            String   @default("")
+  kind               String
+  number             String
+  customerName       String
+  customerPhone      String   @default("")
+  customerEmail      String   @default("")
+  customerAddress    String   @default("")
+  businessName       String   @default("")
+  businessAddress    String   @default("")
+  businessPhone      String   @default("")
+  businessEmail      String   @default("")
+  logoPath           String   @default("")
+  paymentAccountName String   @default("")
+  bankDetails        String   @default("")
+  gcashNumber        String   @default("")
+  currency           String   @default("PHP")
+  discountMinor      Int      @default(0)
+  shippingMinor      Int      @default(0)
+  taxLabel           String   @default("")
+  taxMinor           Int      @default(0)
+  paymentStatus      String   @default("unpaid")
+  deliveryMethod     String   @default("")
+  courier            String   @default("")
+  terms              String   @default("")
+  note               String   @default("")
+  issuedOn           DateTime @default(now())
+  createdAt          DateTime @default(now())
+
+  @@unique([userId, number])
+  @@index([userId, createdAt])
+  @@index([userId, orderId, kind])
+}
+
+model BusinessDocumentLine {
+  id             String @id @default(cuid()) @map("_id")
+  documentId     String
+  userId         String
+  label          String
+  quantity       Float
+  unitPriceMinor Int
+
+  @@index([documentId])
+  @@index([userId, documentId])
+}
