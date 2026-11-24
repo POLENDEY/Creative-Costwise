@@ -233,7 +233,7 @@ export function CostingWorkspace({
   return (
     <div className="feature-page costing-page">
       <div className="page-heading costing-heading">
-        <div><span className="eyebrow">THE MAKING MATH, MADE FRIENDLY</span><h1>Product <em>costing</em></h1><p>Build a clear, per-piece estimate from the things your product uses.</p></div>
+        <div><span className="eyebrow">THE MAKING MATH, MADE FRIENDLY</span><h1>Product <em>costing</em></h1><p>Say what one finished piece uses. Example: 1 sheet of sticker paper and 1 color print make 8 stickers.</p></div>
         <button className="button button-primary" onClick={() => openTab()}><Plus size={17} /> New cost estimate</button>
       </div>
       <div className="costing-shell">

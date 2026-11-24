@@ -16,7 +16,7 @@ export default async function DocumentsPage() {
       <div><span className="eyebrow">INVOICES AND RECEIPTS</span><h1>Documents</h1><p>A saved document keeps its own copy of the customer and prices. It does not create a sale.</p></div>
       <Link href="/documents/new?kind=invoice" className="button button-primary">New invoice</Link>
     </div>
-    {documents.length ? <ul className="movement-list">{documents.map((document) => {
+    {documents.length ? <section className="panel"><div className="panel-heading"><div><span className="eyebrow">SAVED</span><h2>Invoices and receipts</h2></div></div><ul className="record-list">{documents.map((document) => {
       const documentLines = lines.filter((line) => line.documentId === document.id);
       const totals = documentTotals({
         lines: documentLines,
@@ -24,7 +24,17 @@ export default async function DocumentsPage() {
         shippingMinor: document.shippingMinor,
         taxMinor: document.taxMinor,
       });
-      return <li key={document.id}><b>{document.number}</b><span>{document.customerName}</span><span>{formatMoney(totals.totalMinor, resolveCurrency(document.currency))}</span><Link href={`/documents/${document.id}`}>Open</Link></li>;
-    })}</ul> : <section className="panel"><p className="empty-copy">Create an invoice on its own, or open an order and make an invoice or a receipt from it.</p></section>}
+      return <li className="record-card" key={document.id}>
+        <div className="record-main">
+          <b>{document.number}</b>
+          <p className="record-meta">
+            <span>{document.kind === "receipt" ? "Receipt" : "Invoice"}</span>
+            <span>{document.customerName}</span>
+            <span className="record-price">{formatMoney(totals.totalMinor, resolveCurrency(document.currency))}</span>
+          </p>
+        </div>
+        <div className="record-actions"><Link className="button button-secondary" href={`/documents/${document.id}`}>Open</Link></div>
+      </li>;
+    })}</ul></section> : <section className="panel"><p className="empty-copy">Create an invoice on its own, or open an order and make an invoice or a receipt from it.</p></section>}
   </div>;
 }

@@ -3,11 +3,13 @@ import { appUrl, createMailTransport, emailConfigured, escapeHtml, mailFromAddre
 import { formatPlanDate, PLAN_FEATURES } from "@/lib/plan-features";
 import {
   formatPlanPrice,
-  getPlan,
   PLAN_KEYS,
+  planFromPrices,
   planMonthlyMinor,
   planSavingsPercent,
+  type PlanPriceMap,
 } from "@/lib/plans";
+import { getPlanCatalog } from "@/lib/plan-catalog";
 
 /**
  * Automatic renewal reminders.
@@ -41,11 +43,11 @@ function formatEndDate(value: Date) {
   return dateFormatter.format(value) || formatPlanDate(value) || "";
 }
 
-function planOptions() {
+function planOptions(prices: PlanPriceMap) {
   return PLAN_KEYS.map((key) => {
-    const plan = getPlan(key);
-    const savings = planSavingsPercent(key);
-    const monthly = `≈ ${formatPlanPrice(planMonthlyMinor(key))} per month`;
+    const plan = planFromPrices(key, prices);
+    const savings = planSavingsPercent(key, prices);
+    const monthly = `≈ ${formatPlanPrice(planMonthlyMinor(key, prices))} per month`;
     const detail = plan.months === 1
       ? "billed every month, no long commitment"
       : `${monthly}${savings > 0 ? `, save ${savings}%` : ""}`;
@@ -61,12 +63,13 @@ export function buildRenewalEmail(input: {
   name: string;
   plan: string | null;
   expiresAt: Date;
+  prices: PlanPriceMap;
 }) {
-  const plan = getPlan(input.plan);
+  const plan = planFromPrices(input.plan, input.prices);
   const endedOn = formatEndDate(input.expiresAt);
   const pricingUrl = appUrl("/pricing");
   const locked = Object.values(PLAN_FEATURES).map((feature) => feature.label);
-  const options = planOptions();
+  const options = planOptions(input.prices);
 
   const text = [
     `Hello ${input.name},`,
@@ -176,6 +179,7 @@ export async function runRenewalReminders(): Promise<RenewalReminderResult> {
     result.waiting = due.length;
     if (!due.length) return result;
 
+    const prices = await getPlanCatalog();
     const transport = createMailTransport();
     const from = mailFromAddress();
     if (!transport || !from) return result;
@@ -191,7 +195,7 @@ export async function runRenewalReminders(): Promise<RenewalReminderResult> {
         continue;
       }
       const expiresAt = fresh.expiresAt;
-      const message = buildRenewalEmail({ name: user.name, plan: user.plan, expiresAt });
+      const message = buildRenewalEmail({ name: user.name, plan: user.plan, expiresAt, prices });
       try {
         await transport.sendMail({ from, to: user.email, ...message });
         await prisma.user.update({

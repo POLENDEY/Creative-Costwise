@@ -7,7 +7,6 @@ export const PLAN_FEATURES = {
   orders: { label: "Orders", href: "/orders" },
   documents: { label: "Documents", href: "/documents" },
   finance: { label: "Finance", href: "/finance" },
-  purchaseOrders: { label: "Purchase orders", href: "/purchase-orders" },
 } as const;
 
 export type PlanFeatureKey = keyof typeof PLAN_FEATURES;

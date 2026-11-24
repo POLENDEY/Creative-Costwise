@@ -1,6 +1,6 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -9,11 +9,21 @@ import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { requireAdminSession } from "@/lib/admin-session";
 import { convertImageUploadToAvif } from "@/lib/images";
-import { addPlanMonths, getPlan, PLAN_KEYS, planMonths } from "@/lib/plans";
+import { addPlanMonths, PLAN_KEYS, planFromPrices, planMonths } from "@/lib/plans";
+import { getPlanCatalog } from "@/lib/plan-catalog";
 import { isPlanPaymentMethod } from "@/lib/plan-payment-options";
 import { notifyAdminsOfPlanPayment } from "@/lib/plan-payments";
 
-const PROOF_ROOT = path.join(process.cwd(), "private-uploads", "plan-payments");
+const PROOF_ROOT = path.join(process.cwd(), "private-uploads");
+const QR_ROOT = path.join(process.cwd(), "public", "uploads", "plan-payments", "qr");
+
+async function removeStoredFile(root: string, storedPath: string) {
+  const relative = storedPath.replace(/^\/+/, "").replace(/^uploads\/plan-payments\/qr\//, "");
+  const filePath = path.resolve(root, root === QR_ROOT ? path.basename(storedPath) : relative);
+  if (filePath !== root && filePath.startsWith(root + path.sep)) {
+    await rm(filePath, { force: true });
+  }
+}
 
 const submitSchema = z.object({
   plan: z.enum(PLAN_KEYS),
@@ -56,7 +66,7 @@ export async function submitPlanPayment(formData: FormData) {
   await mkdir(directory, { recursive: true });
   await writeFile(path.join(directory, filename), image.buffer, { flag: "wx" });
 
-  const plan = getPlan(parsed.data.plan);
+  const plan = planFromPrices(parsed.data.plan, await getPlanCatalog());
   const submittedAt = new Date();
   const payment = await prisma.planPayment.create({
     data: {
@@ -161,6 +171,36 @@ export async function reviewPlanPayment(formData: FormData) {
   revalidatePath("/", "layout");
 }
 
+export async function deletePlanPayment(paymentId: string) {
+  await requireAdminSession();
+  if (!paymentId) throw new Error("Choose a payment proof to delete.");
+  const payment = await prisma.planPayment.findUnique({
+    where: { id: paymentId },
+    select: { id: true, proofPath: true },
+  });
+  if (!payment) return;
+  await prisma.planPayment.delete({ where: { id: payment.id } });
+  if (payment.proofPath) await removeStoredFile(PROOF_ROOT, payment.proofPath);
+  revalidatePath("/admin/payments");
+  revalidatePath("/pricing");
+}
+
+export async function deletePlanPaymentQr() {
+  await requireAdminSession();
+  const settings = await prisma.planPaymentSettings.findUnique({
+    where: { id: "plan-payments" },
+    select: { qrPath: true },
+  });
+  if (!settings?.qrPath) return;
+  await prisma.planPaymentSettings.update({
+    where: { id: "plan-payments" },
+    data: { qrPath: null },
+  });
+  await removeStoredFile(QR_ROOT, settings.qrPath);
+  revalidatePath("/admin/payments");
+  revalidatePath("/pricing");
+}
+
 const settingsSchema = z.object({
   accountName: z.string().trim().max(100),
   gcashNumber: z.string().trim().max(40),
@@ -180,6 +220,10 @@ export async function savePlanPaymentSettings(formData: FormData) {
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the payment details.");
 
+  const previous = await prisma.planPaymentSettings.findUnique({
+    where: { id: "plan-payments" },
+    select: { qrPath: true },
+  });
   let qrPath: string | undefined;
   const file = formData.get("qr");
   if (file instanceof File && file.size > 0) {
@@ -200,6 +244,9 @@ export async function savePlanPaymentSettings(formData: FormData) {
     update: { ...parsed.data, ...(qrPath ? { qrPath } : {}) },
     create: { id: "plan-payments", ...parsed.data, qrPath: qrPath ?? null },
   });
+  if (qrPath && previous?.qrPath && previous.qrPath !== qrPath) {
+    await removeStoredFile(QR_ROOT, previous.qrPath);
+  }
 
   revalidatePath("/admin/payments");
   revalidatePath("/pricing");

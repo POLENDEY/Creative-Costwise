@@ -6,6 +6,14 @@ import { assertProjectDatabase } from "@/lib/project-database";
 setDefaultResultOrder("ipv4first");
 assertProjectDatabase();
 
+function clientDatabaseUrl() {
+  const url = process.env.DATABASE_URL ?? "";
+  assertProjectDatabase(url);
+  if (url.includes("readPreference=")) return url;
+  const join = url.includes("?") ? "&" : "?";
+  return `${url}${join}readPreference=primaryPreferred`;
+}
+
 const READ_OPERATIONS = new Set([
   "findUnique",
   "findUniqueOrThrow",
@@ -16,7 +24,7 @@ const READ_OPERATIONS = new Set([
   "aggregate",
   "groupBy",
 ]);
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 7;
 const CACHE_TTL_MS = 20_000;
 
 const bypassReadCache = new AsyncLocalStorage<true>();
@@ -55,8 +63,27 @@ function clearReadCache() {
   memory.clear();
 }
 
+function transientDbError(error: unknown) {
+  const message = error instanceof Error ? error.message : "";
+  return message.includes("DNS resolution")
+    || message.includes("I/O error: timed out")
+    || message.includes("Server selection timeout")
+    || message.includes("ReplicaSetNoPrimary");
+}
+
+async function readWithRetry<T>(query: (args: T) => Promise<unknown>, args: T) {
+  try {
+    return await query(args);
+  } catch (error) {
+    if (!transientDbError(error)) throw error;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return query(args);
+  }
+}
+
 function createPrisma() {
   const base = new PrismaClient({
+    datasources: { db: { url: clientDatabaseUrl() } },
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   });
   const extended = base.$extends({
@@ -67,8 +94,9 @@ function createPrisma() {
             clearReadCache();
             return query(args);
           }
-          if (bypassReadCache.getStore()) return query(args);
-          return remember(`${model}:${operation}:${JSON.stringify(args)}`, () => query(args));
+          const load = () => readWithRetry(query, args);
+          if (bypassReadCache.getStore()) return load();
+          return remember(`${model}:${operation}:${JSON.stringify(args)}`, load);
         },
       },
     },
@@ -77,8 +105,13 @@ function createPrisma() {
   Object.defineProperty(extended, "$transaction", {
     configurable: true,
     value: ((async (...args: unknown[]) => {
+      const next = [...args];
+      if (typeof next[0] === "function") {
+        const given = typeof next[1] === "object" && next[1] !== null ? next[1] as { maxWait?: number; timeout?: number } : {};
+        next[1] = { maxWait: 15_000, timeout: 30_000, ...given };
+      }
       try {
-        return await bypassReadCache.run(true, () => transaction(...(args as [never])));
+        return await bypassReadCache.run(true, () => transaction(...(next as [never])));
       } finally {
         clearReadCache();
       }

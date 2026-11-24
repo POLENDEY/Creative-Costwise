@@ -229,7 +229,7 @@ export function PurchaseOrderWorkspace({
   return (
     <div className="feature-page purchase-orders-page">
       <div className="page-heading">
-        <div><span className="eyebrow">PRODUCT REQUESTS &amp; COST DETAILS</span><h1>Purchase <em>orders</em></h1><p>Choose products from your saved price list and send the full cost breakdown to your toolkit admin.</p></div>
+        <div><span className="eyebrow">ASK THE TOOLKIT ADMIN</span><h1>Product <em>requests</em></h1><p>This is not a customer order. Pick a saved price, add how many you want, and send the cost breakdown to your toolkit admin.</p></div>
         <div className="po-heading-actions">
           <button type="button" className="button button-secondary" onClick={saveDraftNow} disabled={isSaving || isPending || (!lines.length && !note.trim())}><Save size={15} /> Save draft</button>
           <button type="button" className="button button-secondary" onClick={() => printRequest(null)} disabled={!lines.length}><FileDown size={16} /> Print / save PDF</button>

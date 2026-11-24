@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { AlertTriangle, ArrowDownWideNarrow, ArrowUpWideNarrow, ArrowUpRight, PackagePlus, Search, Star } from "lucide-react";
 import { restockMaterial, setMaterialCategoryStar } from "@/actions/inventory";
 import { PAYMENT_METHODS } from "@/lib/inventory";
@@ -45,6 +45,7 @@ export function MaterialLibrary({
   const [category, setCategory] = useState("All materials");
   const [ascending, setAscending] = useState(true);
   const [starError, setStarError] = useState("");
+  const [stockId, setStockId] = useState("");
   const starred = categories.filter((item) => item.starred);
   const filtered = useMemo(() => materials
     .filter((material) => category === "All materials" || material.category === category)
@@ -83,14 +84,21 @@ export function MaterialLibrary({
       <thead><tr><th>Material</th><th>Category</th><th>Pack cost</th><th>Cost per unit</th><th>On hand</th><th>Supplier</th></tr></thead>
       <tbody>{filtered.map((material) => {
         const low = material.lowStockAlert !== null && material.quantityOnHand <= material.lowStockAlert;
-        return <tr key={material.id}>
-          <td><div className="material-name-cell"><span className="material-swatch">{material.name.slice(0, 1).toUpperCase()}</span><span><b>{material.name}</b><small>{[material.finish === "other" ? material.finishOther : material.finish, material.gsm && `${material.gsm} gsm`].filter(Boolean).join(" · ") || material.unitLabel}</small><RestockForm materialId={material.id} currency={currency} /></span></div></td>
-          <td><span className="table-pill">{material.category}</span></td>
-          <td>{formatMoney(material.pricePerPackMinor, currency)}<small className="table-subtext">{material.piecesPerPack} per pack</small></td>
-          <td className="cost-cell">{formatMoney(calculateMaterialCostPerPiece(material.pricePerPackMinor, material.piecesPerPack), currency)}<small className="table-subtext">per {material.unitLabel}</small></td>
-          <td><span className={`stock-count ${low ? "stock-count-low" : ""}`}>{low && <AlertTriangle size={14} />}{material.quantityOnHand} <small>{material.unitLabel}</small></span>{low && <small className="table-subtext">Restock threshold: {material.lowStockAlert}</small>}</td>
-          <td>{material.supplierUrl ? <a href={material.supplierUrl} target="_blank" rel="noreferrer" className="supplier-link">Reorder <ArrowUpRight size={13} /></a> : <span className="muted">—</span>}</td>
-        </tr>;
+        return <Fragment key={material.id}>
+          <tr>
+            <td><div className="material-name-cell"><span className="material-swatch">{material.name.slice(0, 1).toUpperCase()}</span><span><b>{material.name}</b><small>{[material.finish === "other" ? material.finishOther : material.finish, material.gsm && `${material.gsm} gsm`].filter(Boolean).join(" · ") || material.unitLabel}</small></span></div></td>
+            <td><span className="table-pill">{material.category}</span></td>
+            <td>{formatMoney(material.pricePerPackMinor, currency)}<small className="table-subtext">{material.piecesPerPack} per pack</small></td>
+            <td className="cost-cell">{formatMoney(calculateMaterialCostPerPiece(material.pricePerPackMinor, material.piecesPerPack), currency)}<small className="table-subtext">per {material.unitLabel}</small></td>
+            <td>
+              <span className={`stock-count ${low ? "stock-count-low" : ""}`}>{low && <AlertTriangle size={14} />}{material.quantityOnHand} <small>{material.unitLabel}</small></span>
+              {low && <small className="table-subtext">Restock threshold: {material.lowStockAlert}</small>}
+              <button type="button" className="button button-secondary stock-toggle" aria-expanded={stockId === material.id} onClick={() => setStockId((current) => current === material.id ? "" : material.id)}>{stockId === material.id ? "Close" : "Update stock"}</button>
+            </td>
+            <td>{material.supplierUrl ? <a href={material.supplierUrl} target="_blank" rel="noreferrer" className="supplier-link">Supplier <ArrowUpRight size={13} /></a> : <span className="muted">—</span>}</td>
+          </tr>
+          {stockId === material.id ? <tr className="stock-edit-row"><td colSpan={6}><RestockForm materialId={material.id} currency={currency} /></td></tr> : null}
+        </Fragment>;
       })}</tbody>
     </table></div> : <div className="empty-state"><div className="empty-illustration"><PackagePlus size={25} /></div><b>{materials.length ? "No supplies match this search." : "Your material shelf is ready."}</b><p>{materials.length ? "Try another name or category." : "Add your first supply to see cost per piece and track stock as you create."}</p></div>}
   </section>;

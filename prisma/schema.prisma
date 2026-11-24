@@ -29,6 +29,7 @@ model User {
   purchaseOrders     PurchaseOrder[]
   notifications      Notification[]
   planPayments       PlanPayment[]
+  templateWishes     TemplateWish[]
 
   @@index([role, createdAt])
 }
@@ -523,4 +524,77 @@ model BusinessDocumentLine {
 
   @@index([documentId])
   @@index([userId, documentId])
+}
+
+/// Provider links for the master-sheet template and the annual community. Empty until an admin sets them.
+model ResourceSettings {
+  id                String   @id @map("_id")
+  masterTemplateUrl String   @default("")
+  communityUrl      String   @default("")
+  termsUrl          String   @default("")
+  privacyUrl        String   @default("")
+  updatedAt         DateTime @updatedAt
+}
+
+model TemplateEntry {
+  id        String   @id @default(cuid()) @map("_id")
+  name      String
+  category  String   @default("")
+  imageUrl  String   @default("")
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+}
+
+model TemplateWish {
+  id        String   @id @default(cuid()) @map("_id")
+  userId    String
+  title     String
+  details   String   @default("")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([createdAt])
+}
+
+/// Admin-edited prices for the three crafter plans. One document for the whole toolkit.
+model PlanCatalog {
+  id                   String   @id @map("_id")
+  monthlyPriceMinor    Int
+  quarterlyPriceMinor  Int
+  annualPriceMinor     Int
+  updatedAt            DateTime @updatedAt
+}
+
+/// A purchase list the crafter sends to their own materials supplier.
+model SupplierOrder {
+  id           String              @id @default(cuid()) @map("_id")
+  userId       String
+  supplierName String
+  status       String              @default("draft")
+  note         String              @default("")
+  currency     String              @default("PHP")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  receivedAt   DateTime?
+  lines        SupplierOrderLine[]
+
+  @@index([userId, updatedAt])
+}
+
+model SupplierOrderLine {
+  id             String        @id @default(cuid()) @map("_id")
+  orderId        String
+  userId         String
+  materialId     String
+  materialName   String
+  packs          Float
+  packPriceMinor Int
+  order          SupplierOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([userId])
 }

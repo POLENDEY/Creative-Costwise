@@ -16,6 +16,7 @@ export default async function ShopLayout({ children }: Readonly<{ children: Reac
   return (
     <div data-theme={settings?.theme ?? "pink"} data-scheme={settings?.colorScheme ?? "light"}>
       <AppFrame
+        userId={user.id}
         name={user.name}
         businessName={settings?.businessName ?? ""}
         welcomeNeeded={!user.welcomedAt}

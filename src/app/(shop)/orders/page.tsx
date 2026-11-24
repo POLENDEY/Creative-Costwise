@@ -9,9 +9,16 @@ import { resolveCurrency } from "@/lib/money";
 export default async function OrdersPage() {
   const user = await requireCrafter("orders");
   const [settings, orders, lines] = await Promise.all([
-    prisma.shopSettings.findUnique({ where: { userId: user.id } }),
-    prisma.shopOrder.findMany({ where: { userId: user.id }, orderBy: { updatedAt: "desc" } }),
-    prisma.shopOrderLine.findMany({ where: { userId: user.id } }),
+    prisma.shopSettings.findUnique({ where: { userId: user.id }, select: { currency: true } }),
+    prisma.shopOrder.findMany({
+      where: { userId: user.id },
+      orderBy: { updatedAt: "desc" },
+      select: { id: true, customerName: true, stage: true, discountMinor: true, shippingMinor: true, dueOn: true },
+    }),
+    prisma.shopOrderLine.findMany({
+      where: { userId: user.id },
+      select: { orderId: true, unitPriceMinor: true, quantity: true },
+    }),
   ]);
   const currency = resolveCurrency(settings?.currency);
   const boardOrders = orders.flatMap((order) => {
@@ -33,7 +40,7 @@ export default async function OrdersPage() {
 
   return <div className="feature-page">
     <div className="page-heading">
-      <div><span className="eyebrow">FROM INQUIRY TO DONE</span><h1>Order <em>board</em></h1><p>Drag a card between columns. A deposit before production is only a recommendation.</p></div>
+      <div><span className="eyebrow">FROM INQUIRY TO DONE</span><h1>Order <em>board</em></h1><p>These are customer orders. Drag a card between columns. A deposit before production is only a recommendation.</p></div>
       <Link href="/orders/new" className="button button-primary"><Plus size={17} /> New order</Link>
     </div>
     <OrderBoard orders={boardOrders} currency={currency} />

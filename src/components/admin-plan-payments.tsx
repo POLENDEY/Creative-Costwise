@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react";
 import Image from "next/image";
-import { QrCode, Save } from "lucide-react";
-import { reviewPlanPayment, savePlanPaymentSettings } from "@/actions/plan-payments";
+import { useRouter } from "next/navigation";
+import { QrCode, Save, Trash2 } from "lucide-react";
+import { deletePlanPayment, deletePlanPaymentQr, reviewPlanPayment, savePlanPaymentSettings } from "@/actions/plan-payments";
 import { paymentMethodLabel, PLAN_PAYMENT_METHODS } from "@/lib/plan-payment-options";
 import { formatPlanPrice, getPlan } from "@/lib/plans";
 
@@ -40,10 +41,12 @@ export function AdminPlanPayments({
   payments: AdminPlanPaymentRow[];
   settings: AdminPaymentSettings;
 }) {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [saving, startSaving] = useTransition();
   const [reviewing, startReviewing] = useTransition();
+  const [deletingId, setDeletingId] = useState("");
 
   function saveSettings(formData: FormData) {
     setError("");
@@ -71,6 +74,40 @@ export function AdminPlanPayments({
     });
   }
 
+  function removePayment(payment: AdminPlanPaymentRow) {
+    const label = `${payment.crafterName}'s ${getPlan(payment.plan).label} proof`;
+    if (!window.confirm(`Delete ${label}? This removes the record and the screenshot from the database. The crafter's plan dates stay as they are.`)) return;
+    setError("");
+    setMessage("");
+    setDeletingId(payment.id);
+    startReviewing(async () => {
+      try {
+        await deletePlanPayment(payment.id);
+        setMessage("Payment proof deleted.");
+        router.refresh();
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : "The payment proof could not be deleted.");
+      } finally {
+        setDeletingId("");
+      }
+    });
+  }
+
+  function removeQr() {
+    if (!window.confirm("Delete the payment QR code? Crafters will no longer see it on the plans page.")) return;
+    setError("");
+    setMessage("");
+    startSaving(async () => {
+      try {
+        await deletePlanPaymentQr();
+        setMessage("Payment QR code deleted.");
+        router.refresh();
+      } catch (reason) {
+        setError(reason instanceof Error ? reason.message : "The QR code could not be deleted.");
+      }
+    });
+  }
+
   return (
     <>
       <section className="admin-create-card">
@@ -90,7 +127,10 @@ export function AdminPlanPayments({
           </div>
           <div className="plan-pay-settings-row">
             {settings.qrPath ? (
-              <Image className="plan-pay-qr" src={settings.qrPath} alt="Current payment QR code" width={168} height={168} />
+              <span className="plan-pay-qr-actions">
+                <Image className="plan-pay-qr" src={settings.qrPath} alt="Current payment QR code" width={168} height={168} />
+                <button className="admin-mini-button admin-mini-danger" type="button" onClick={removeQr} disabled={saving}><Trash2 size={12} /> Delete QR</button>
+              </span>
             ) : (
               <span className="plan-pay-qr-empty"><QrCode size={22} /> No QR uploaded yet</span>
             )}
@@ -116,6 +156,7 @@ export function AdminPlanPayments({
                   <th>Proof</th>
                   <th>Sent</th>
                   <th>Decision</th>
+                  <th>Delete</th>
                 </tr>
               </thead>
               <tbody>
@@ -146,6 +187,11 @@ export function AdminPlanPayments({
                           {payment.adminNote ? ` · ${payment.adminNote}` : ""}
                         </small>
                       )}
+                    </td>
+                    <td>
+                      <button className="admin-mini-button admin-mini-danger" type="button" onClick={() => removePayment(payment)} disabled={reviewing && deletingId === payment.id}>
+                        <Trash2 size={12} /> {deletingId === payment.id ? "Deleting…" : "Delete"}
+                      </button>
                     </td>
                   </tr>
                 ))}

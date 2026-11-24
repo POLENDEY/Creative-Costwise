@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [motionPaused, setMotionPaused] = useState(false);
 
   async function submit(formData: FormData) {
     setBusy(true);
@@ -53,6 +54,34 @@ export default function LoginPage() {
               <li>Print cost per sheet</li>
               <li>Retail and bulk prices</li>
             </ul>
+          </div>
+          <div className={`login-scene ${motionPaused ? "is-paused" : ""}`}>
+            <div className="login-diorama" aria-hidden="true">
+              <article className="cost-card cost-card-print">
+                <span>Print</span>
+                <strong>Color sheet</strong>
+                <em>Ink cost per page</em>
+                <i className="sheet-marks" />
+              </article>
+              <article className="cost-card cost-card-material">
+                <span>Material</span>
+                <strong>Sticker paper</strong>
+                <em>₱2.40 / piece</em>
+                <i className="paper-swatch" />
+              </article>
+              <article className="cost-card cost-card-price">
+                <span>Price</span>
+                <strong>₱48</strong>
+                <em>Retail · ₱36 bulk</em>
+              </article>
+            </div>
+            <button
+              type="button"
+              className="login-motion"
+              onClick={() => setMotionPaused((value) => !value)}
+            >
+              {motionPaused ? "Play motion" : "Pause motion"}
+            </button>
           </div>
         </section>
         <section className="login-form-panel">

@@ -58,6 +58,29 @@ export function isPlanKey(value: unknown): value is PlanKey {
   return typeof value === "string" && (PLAN_KEYS as readonly string[]).includes(value);
 }
 
+export type PlanPriceMap = Record<PlanKey, number>;
+
+export function defaultPlanPrices(): PlanPriceMap {
+  return {
+    monthly: PLANS.monthly.priceMinor,
+    quarterly: PLANS.quarterly.priceMinor,
+    annual: PLANS.annual.priceMinor,
+  };
+}
+
+export function plansWithPrices(prices: PlanPriceMap): Record<PlanKey, PlanDefinition> {
+  return {
+    monthly: { ...PLANS.monthly, priceMinor: prices.monthly },
+    quarterly: { ...PLANS.quarterly, priceMinor: prices.quarterly },
+    annual: { ...PLANS.annual, priceMinor: prices.annual },
+  };
+}
+
+export function planFromPrices(plan: string | null | undefined, prices: PlanPriceMap): PlanDefinition {
+  const catalog = plansWithPrices(prices);
+  return isPlanKey(plan) ? catalog[plan] : catalog.quarterly;
+}
+
 export function getPlan(plan: string | null | undefined): PlanDefinition {
   return isPlanKey(plan) ? PLANS[plan] : PLANS.quarterly;
 }
@@ -90,21 +113,21 @@ export function formatPlanPrice(minor: number): string {
 }
 
 /** Effective monthly cost of a billing period, rounded to the peso. */
-export function planMonthlyMinor(plan: string | null | undefined): number {
-  const definition = getPlan(plan);
+export function planMonthlyMinor(plan: string | null | undefined, prices: PlanPriceMap = defaultPlanPrices()): number {
+  const definition = planFromPrices(plan, prices);
   return Math.round(definition.priceMinor / definition.months);
 }
 
 /** How much cheaper than paying monthly, as a whole percentage. */
-export function planSavingsPercent(plan: string | null | undefined): number {
-  const definition = getPlan(plan);
-  const monthlyTotal = PLANS.monthly.priceMinor * definition.months;
+export function planSavingsPercent(plan: string | null | undefined, prices: PlanPriceMap = defaultPlanPrices()): number {
+  const definition = planFromPrices(plan, prices);
+  const monthlyTotal = prices.monthly * definition.months;
   if (monthlyTotal <= 0) return 0;
   return Math.max(0, Math.round((1 - definition.priceMinor / monthlyTotal) * 100));
 }
 
 /** "₱799 every 3 months" */
-export function planBillingLine(plan: string | null | undefined): string {
-  const definition = getPlan(plan);
+export function planBillingLine(plan: string | null | undefined, prices: PlanPriceMap = defaultPlanPrices()): string {
+  const definition = planFromPrices(plan, prices);
   return `${formatPlanPrice(definition.priceMinor)} ${definition.cadence}`;
 }

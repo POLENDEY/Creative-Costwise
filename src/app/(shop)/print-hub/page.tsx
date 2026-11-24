@@ -20,7 +20,7 @@ export default async function PrintHubPage() {
   return (
     <div className="feature-page">
       <div className="page-heading">
-        <div><span className="eyebrow">INK, PAPER &amp; POSSIBILITIES</span><h1>Your <em>Print hub</em></h1><p>Set a helpful baseline for the prints that make your products yours.</p></div>
+        <div><span className="eyebrow">INK, PAPER &amp; POSSIBILITIES</span><h1>Your <em>Print hub</em></h1><p>Enter the ink bottle price and how many pages it prints. Example: color ink at ₱450 for about 4,500 pages.</p></div>
         <a className="button button-primary" href="#add-printer"><Plus size={17} /> Add printer</a>
       </div>
       <div className="print-hub-note"><span><Info size={17} /></span><p>These are your <b>base ink costs per sheet.</b> Your product calculator scales them for paper size, quality, and coverage.</p></div>

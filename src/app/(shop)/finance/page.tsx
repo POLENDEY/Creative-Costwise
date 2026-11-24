@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
-import { financeSummary, financeWindow, type FinanceRange } from "@/lib/finance";
+import { CompareChart } from "@/components/compare-chart";
+import { financeDaily, financeSummary, financeWindow, type FinanceRange } from "@/lib/finance";
 import { formatMoney, resolveCurrency } from "@/lib/money";
 
 const ranges: { id: FinanceRange; label: string }[] = [
@@ -20,10 +21,12 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     prisma.sale.findMany({
       where: { userId: user.id, recognizedOn: { gte: from, lte: to } },
       orderBy: { recognizedOn: "desc" },
+      select: { id: true, orderId: true, amountMinor: true, currency: true, recognizedOn: true },
     }),
     prisma.expense.findMany({
       where: { userId: user.id, occurredOn: { gte: from, lte: to } },
       orderBy: { occurredOn: "desc" },
+      select: { id: true, description: true, amountMinor: true, occurredOn: true },
     }),
   ]);
   const orders = sales.length
@@ -42,19 +45,36 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     <div className="page-heading">
       <div><span className="eyebrow">SALES AND EXPENSES</span><h1>Finance</h1><p>Revenue is the sale recorded when an order is delivered. Expenses are restocks and printer supplies.</p></div>
     </div>
-    <div className="category-chips">{ranges.map((item) => <Link key={item.id} href={`/finance?range=${item.id}`} className={`category-chip ${range === item.id ? "category-chip-selected" : ""}`}>{item.label}</Link>)}</div>
+    <nav className="range-switch" aria-label="Date range">
+      {ranges.map((item) => (
+        <Link key={item.id} href={`/finance?range=${item.id}`} aria-current={range === item.id ? "page" : undefined}>{item.label}</Link>
+      ))}
+    </nav>
+    <CompareChart title="Revenue and expenses by day" rows={financeDaily({ from, to, sales, expenses })} />
     <div className="material-summary-row">
-      <div className="material-summary-card"><span><b>{formatMoney(summary.revenueMinor, currency)}</b><small>product revenue</small></span></div>
-      <div className="material-summary-card"><span><b>{formatMoney(summary.expenseMinor, currency)}</b><small>expenses</small></span></div>
-      <div className="material-summary-card"><span><b>{formatMoney(summary.profitMinor, currency)}</b><small>revenue minus expenses</small></span></div>
+      <div className="material-summary-card summary-figure"><span><b>{formatMoney(summary.revenueMinor, currency)}</b><small>product revenue</small></span></div>
+      <div className="material-summary-card summary-figure"><span><b>{formatMoney(summary.expenseMinor, currency)}</b><small>expenses</small></span></div>
+      <div className={`material-summary-card summary-figure ${summary.profitMinor < 0 ? "is-negative" : ""}`}><span><b>{formatMoney(summary.profitMinor, currency)}</b><small>revenue minus expenses</small></span></div>
     </div>
     <section className="panel">
       <div className="panel-heading"><div><span className="eyebrow">SALES</span><h2>Delivered orders</h2></div></div>
-      {sales.length ? <ul className="movement-list">{sales.map((sale) => <li key={sale.id}><b>{names.get(sale.orderId) ?? "Order"}</b><span>{formatMoney(sale.amountMinor, resolveCurrency(sale.currency))}</span><small>{sale.recognizedOn.toLocaleString()}</small></li>)}</ul> : <p className="empty-copy">No delivered sales in this range.</p>}
+      {sales.length ? <ul className="record-list">{sales.map((sale) => <li className="record-card" key={sale.id}>
+        <div className="record-main">
+          <b>{names.get(sale.orderId) ?? "Order"}</b>
+          <p className="record-meta"><span>{sale.recognizedOn.toLocaleString()}</span></p>
+        </div>
+        <span className="record-price">{formatMoney(sale.amountMinor, resolveCurrency(sale.currency))}</span>
+      </li>)}</ul> : <p className="empty-copy">No delivered sales in this range.</p>}
     </section>
     <section className="panel">
       <div className="panel-heading"><div><span className="eyebrow">EXPENSES</span><h2>Recorded purchases</h2></div></div>
-      {expenses.length ? <ul className="movement-list">{expenses.map((expense) => <li key={expense.id}><b>{expense.description}</b><span>{formatMoney(expense.amountMinor, currency)}</span><small>{expense.occurredOn.toLocaleString()}</small></li>)}</ul> : <p className="empty-copy">No expenses in this range.</p>}
+      {expenses.length ? <ul className="record-list">{expenses.map((expense) => <li className="record-card" key={expense.id}>
+        <div className="record-main">
+          <b>{expense.description}</b>
+          <p className="record-meta"><span>{expense.occurredOn.toLocaleString()}</span></p>
+        </div>
+        <span className="record-price">{formatMoney(expense.amountMinor, currency)}</span>
+      </li>)}</ul> : <p className="empty-copy">No expenses in this range.</p>}
     </section>
   </div>;
 }

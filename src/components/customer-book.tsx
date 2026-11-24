@@ -15,6 +15,7 @@ type CustomerRow = {
 
 export function CustomerBook({ customers }: { customers: CustomerRow[] }) {
   const [query, setQuery] = useState("");
+  const [editing, setEditing] = useState("");
   const [error, setError] = useState("");
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -29,13 +30,19 @@ export function CustomerBook({ customers }: { customers: CustomerRow[] }) {
         <span className="search-field"><Search size={16} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search name, phone, or email" aria-label="Search customers" /></span>
       </div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {visible.length ? <ul className="movement-list">{visible.map((customer) => <li key={customer.id}>
-        <div><b>{customer.name}</b><small>{[customer.phone, customer.email].filter(Boolean).join(" · ") || "No contact details yet"}</small>{customer.address && <small>{customer.address}</small>}</div>
-        <details>
-          <summary>Edit</summary>
-          <CustomerForm key={`${customer.name}|${customer.phone}|${customer.email}|${customer.address}|${customer.notes}`} customer={customer} onError={setError} />
-        </details>
-      </li>)}</ul> : <p className="empty-copy">{customers.length ? "No customers match this search." : "Add a customer when you want their details ready for the next order."}</p>}
+      {visible.length ? <ul className="record-list">{visible.map((customer) => {
+        const contact = [customer.phone, customer.email, customer.address].filter(Boolean);
+        return <li className="record-card" key={customer.id}>
+          <div className="record-main">
+            <b>{customer.name}</b>
+            <p className="record-meta">{contact.length ? contact.map((item) => <span key={item}>{item}</span>) : <span>No contact details yet</span>}</p>
+          </div>
+          <div className="record-actions">
+            <button type="button" className="button button-secondary" aria-expanded={editing === customer.id} onClick={() => setEditing((current) => current === customer.id ? "" : customer.id)}>{editing === customer.id ? "Close" : "Edit"}</button>
+          </div>
+          {editing === customer.id && <div className="record-editor"><CustomerForm key={`${customer.name}|${customer.phone}|${customer.email}|${customer.address}|${customer.notes}`} customer={customer} onError={setError} /></div>}
+        </li>;
+      })}</ul> : <p className="empty-copy">{customers.length ? "No customers match this search." : "Add a customer when you want their details ready for the next order."}</p>}
     </section>
     <section className="panel">
       <div className="panel-heading"><div><span className="eyebrow">NEW CUSTOMER</span><h2>Add someone</h2></div></div>

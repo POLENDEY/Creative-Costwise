@@ -9,8 +9,13 @@ const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+// Browsers keep a cookie for at most 400 days. Each visit renews it, so a
+// successful sign-in stays in place across restarts until the user signs out.
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 400;
+
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" },
+  session: { strategy: "jwt", maxAge: SESSION_MAX_AGE_SECONDS, updateAge: 0 },
+  jwt: { maxAge: SESSION_MAX_AGE_SECONDS },
   pages: { signIn: "/login" },
   providers: [
     CredentialsProvider({

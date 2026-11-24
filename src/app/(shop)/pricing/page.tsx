@@ -8,9 +8,11 @@ import {
   PLAN_KEYS,
   planBillingLine,
   planExpiry,
+  planFromPrices,
   planMonthlyMinor,
   planSavingsPercent,
 } from "@/lib/plans";
+import { getPlanCatalog } from "@/lib/plan-catalog";
 import { PlanPaymentForm } from "@/components/plan-payment-form";
 import { paymentMethodLabel } from "@/lib/plan-payment-options";
 import { getPlanPaymentDetails, getPlanPaymentsForUser, hasPlanPaymentDetails } from "@/lib/plan-payments";
@@ -25,7 +27,8 @@ const paymentStatusLabels: Record<string, string> = {
 
 export default async function PricingPage() {
   const user = await requireCrafter();
-  const currentPlan = getPlan(user.plan);
+  const prices = await getPlanCatalog();
+  const currentPlan = planFromPrices(user.plan, prices);
   const endsOn = formatPlanDate(user.expiresAt);
   const today = new Date();
   const [paymentDetails, payments] = await Promise.all([
@@ -48,7 +51,7 @@ export default async function PricingPage() {
         <div>
           <b>You are on the {currentPlan.label} plan</b>
           <small>
-            {planBillingLine(currentPlan.key)}
+            {planBillingLine(currentPlan.key, prices)}
             {endsOn ? ` · access ${user.access.limited ? "ended" : "runs to"} ${endsOn}` : ""}
           </small>
         </div>
@@ -56,8 +59,8 @@ export default async function PricingPage() {
 
       <div className="pricing-grid">
         {PLAN_KEYS.map((key) => {
-          const plan = getPlan(key);
-          const savings = planSavingsPercent(key);
+          const plan = planFromPrices(key, prices);
+          const savings = planSavingsPercent(key, prices);
           const active = user.plan === key;
           return (
             <article className={`pricing-card ${active ? "pricing-card-active" : ""}`} key={key}>
@@ -70,7 +73,7 @@ export default async function PricingPage() {
                 <span>{plan.cadence}</span>
               </div>
               <p className="pricing-permonth">
-                ≈ {formatPlanPrice(planMonthlyMinor(key))} per month
+                ≈ {formatPlanPrice(planMonthlyMinor(key, prices))} per month
                 {savings > 0 ? ` · save ${savings}%` : " · no long commitment"}
               </p>
               <p className="pricing-summary">{plan.summary}</p>
@@ -121,12 +124,16 @@ export default async function PricingPage() {
 
           <PlanPaymentForm
             defaultPlan={currentPlan.key}
-            plans={PLAN_KEYS.map((key) => ({
-              key,
-              label: getPlan(key).label,
-              price: formatPlanPrice(getPlan(key).priceMinor),
-              cadence: getPlan(key).cadence,
-            }))}
+            plans={PLAN_KEYS.map((key) => {
+              const plan = planFromPrices(key, prices);
+              return {
+                key,
+                label: plan.label,
+                price: formatPlanPrice(plan.priceMinor),
+                cadence: plan.cadence,
+                priceMinor: plan.priceMinor,
+              };
+            })}
           />
         </div>
 

@@ -207,28 +207,27 @@ export async function moveOrderStage(orderId: string, stage: string) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      const current = await tx.shopOrder.findFirst({ where: { id: order.id, userId: user.id } });
-      if (!current || current.stage === stage) return;
-      await tx.shopOrder.update({ where: { id: current.id }, data: { stage } });
+      await tx.shopOrder.update({ where: { id: order.id }, data: { stage } });
       await tx.shopOrderStatus.create({
-        data: { orderId: current.id, userId: user.id, fromStage: current.stage, toStage: stage },
+        data: { orderId: order.id, userId: user.id, fromStage: order.stage, toStage: stage },
       });
       if (stage === "delivered") {
-        const existingSale = await tx.sale.findUnique({ where: { orderId: current.id }, select: { id: true } });
-        if (!existingSale) {
-          await tx.sale.create({
-            data: {
-              userId: user.id,
-              orderId: current.id,
-              amountMinor: totals.totalMinor,
-              currency: current.currency,
-            },
-          });
-        }
+        await tx.sale.create({
+          data: {
+            userId: user.id,
+            orderId: order.id,
+            amountMinor: totals.totalMinor,
+            currency: order.currency,
+          },
+        });
       }
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
+    const message = error instanceof Error ? error.message : "";
+    if (message.includes("Transaction already closed") || message.includes("Transaction API error")) {
+      throw new Error("Saving took too long because the database was slow. Move the order again.");
+    }
     throw error;
   }
 

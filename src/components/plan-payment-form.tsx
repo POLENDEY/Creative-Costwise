@@ -7,7 +7,7 @@ import { PLAN_PAYMENT_METHODS } from "@/lib/plan-payment-options";
 import { formatPlanDate } from "@/lib/plan-features";
 import { formatPlanPrice, getPlan, planExpiry } from "@/lib/plans";
 
-type PlanOption = { key: string; label: string; price: string; cadence: string };
+type PlanOption = { key: string; label: string; price: string; cadence: string; priceMinor: number };
 
 export function PlanPaymentForm({
   plans,
@@ -22,6 +22,7 @@ export function PlanPaymentForm({
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const definition = getPlan(plan);
+  const selected = plans.find((option) => option.key === plan);
   const endsOn = formatPlanDate(planExpiry(plan));
 
   function submit(formData: FormData) {
@@ -54,7 +55,7 @@ export function PlanPaymentForm({
           <small className="plan-expiry-preview">
             A {definition.label.toLowerCase()} payment runs {definition.months} month
             {definition.months === 1 ? "" : "s"} and would end <b>{endsOn}</b>
-            {definition.priceMinor ? ` · ${formatPlanPrice(definition.priceMinor)} in total` : ""}
+            {selected ? ` · ${formatPlanPrice(selected.priceMinor)} in total` : ""}
           </small>
         </label>
         <label className="field">

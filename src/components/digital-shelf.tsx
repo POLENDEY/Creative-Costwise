@@ -8,6 +8,7 @@ type DigitalRow = { id: string; name: string; priceMinor: number; url: string };
 
 export function DigitalShelf({ products, currency }: { products: DigitalRow[]; currency: Currency }) {
   const [copied, setCopied] = useState("");
+  const [editing, setEditing] = useState("");
   const [error, setError] = useState("");
 
   async function copy(url: string, id: string) {
@@ -19,11 +20,17 @@ export function DigitalShelf({ products, currency }: { products: DigitalRow[]; c
     <section className="panel">
       <div className="panel-heading"><div><span className="eyebrow">LINKS</span><h2>Digital products</h2></div></div>
       {error && <p className="form-error" role="alert">{error}</p>}
-      {products.length ? <ul className="movement-list">{products.map((product) => <li key={product.id}>
-        <div><b>{product.name}</b><small>{formatMoney(product.priceMinor, currency)}</small></div>
-        <a href={product.url} target="_blank" rel="noreferrer">Open link</a>
-        <button type="button" className="button button-secondary" onClick={() => void copy(product.url, product.id)}>{copied === product.id ? "Copied" : "Copy link"}</button>
-        <details><summary>Edit</summary><DigitalForm currency={currency} product={product} onError={setError} /></details>
+      {products.length ? <ul className="record-list">{products.map((product) => <li className="record-card" key={product.id}>
+        <div className="record-main">
+          <b>{product.name}</b>
+          <p className="record-meta"><span className="record-price">{formatMoney(product.priceMinor, currency)}</span></p>
+        </div>
+        <div className="record-actions">
+          <a className="record-link" href={product.url} target="_blank" rel="noreferrer">Open link</a>
+          <button type="button" className="button button-secondary" onClick={() => void copy(product.url, product.id)}>{copied === product.id ? "Copied" : "Copy link"}</button>
+          <button type="button" className="button button-secondary" aria-expanded={editing === product.id} onClick={() => setEditing((current) => current === product.id ? "" : product.id)}>{editing === product.id ? "Close" : "Edit"}</button>
+        </div>
+        {editing === product.id && <div className="record-editor"><DigitalForm currency={currency} product={product} onError={setError} /></div>}
       </li>)}</ul> : <p className="empty-copy">Add a name, a price, and the Canva or Drive link. The file stays where you host it.</p>}
     </section>
     <section className="panel">

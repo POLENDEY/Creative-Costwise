@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { Boxes, FileText, LogOut, UsersRound, Wallet } from "lucide-react";
+import { LogOut, UsersRound, Wallet } from "lucide-react";
 import { NotificationBell, type AppNotification } from "@/components/notification-bell";
 
 const links = [
   { href: "/admin/users", label: "Crafter accounts", icon: UsersRound },
-  { href: "/admin/orders", label: "Purchase requests", icon: FileText },
   { href: "/admin/payments", label: "Renewal payments", icon: Wallet },
-  { href: "/admin/inventory", label: "Product inventory", icon: Boxes },
 ];
 
 export function AdminFrame({ name, notifications, children }: { name: string; notifications: AppNotification[]; children: React.ReactNode }) {
