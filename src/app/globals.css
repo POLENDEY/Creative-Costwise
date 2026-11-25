@@ -909,14 +909,16 @@ button { color: inherit; }
 .compare-swatch { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
 .compare-swatch-revenue { background: var(--accent); }
 .compare-swatch-expense { background: var(--ink); opacity: 0.35; }
-.compare-pie { grid-template-columns: minmax(0, 1fr) 280px; align-items: center; column-gap: 28px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.compare-pie { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); align-items: center; column-gap: 28px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
 .compare-pie figcaption { grid-column: 1 / -1; }
 .compare-pie-chart { display: flex; align-items: center; gap: 18px; min-width: 0; }
 .compare-pie svg { width: 168px; height: 168px; flex: 0 0 auto; background: transparent; border: 0; }
-.compare-pie-side { display: grid; gap: 10px; align-content: center; width: 280px; justify-self: end; min-width: 0; }
+.compare-pie-side { display: grid; gap: 10px; align-content: center; width: 100%; justify-self: end; min-width: 0; }
 .compare-pie-side .material-summary-row { grid-template-columns: 1fr; gap: 8px; }
-.compare-pie-side .material-summary-card { min-height: 64px; padding: 10px 12px; background: var(--surface-2); }
-.compare-pie-side .material-summary-card small { font-size: 12px; line-height: 1.35; }
+.compare-pie-side .material-summary-card { min-height: 0; align-items: center; padding: 12px 14px; background: var(--surface-2); }
+.compare-pie-side .material-summary-card > span:last-child { min-width: 0; flex: 1; }
+.compare-pie-side .material-summary-card b { font-size: 22px; line-height: 1; }
+.compare-pie-side .material-summary-card small { display: block; margin-top: 4px; font-size: 13px; line-height: 1.35; white-space: normal; overflow-wrap: break-word; }
 .compare-pie-total { justify-self: stretch; display: grid; gap: 4px; margin: 0; text-align: left; }
 .compare-pie-total b { color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 32px; font-weight: 400; letter-spacing: -0.03em; line-height: 1; }
 .compare-pie-total small { color: var(--muted); font-size: 12px; }

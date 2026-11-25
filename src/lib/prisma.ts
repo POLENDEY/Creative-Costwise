@@ -6,12 +6,14 @@ import { assertProjectDatabase } from "@/lib/project-database";
 setDefaultResultOrder("ipv4first");
 assertProjectDatabase();
 
-function clientDatabaseUrl() {
+function clientDatabaseUrl(readPreference: "primary" | "primaryPreferred", serverSelectionTimeoutMS: number) {
   const url = process.env.DATABASE_URL ?? "";
   assertProjectDatabase(url);
-  if (url.includes("readPreference=")) return url;
-  const join = url.includes("?") ? "&" : "?";
-  return `${url}${join}readPreference=primaryPreferred`;
+  const stripped = url
+    .replace(/([?&])(readPreference|serverSelectionTimeoutMS)=[^&]*&?/g, "$1")
+    .replace(/[?&]$/, "");
+  const join = stripped.includes("?") ? "&" : "?";
+  return `${stripped}${join}readPreference=${readPreference}&serverSelectionTimeoutMS=${serverSelectionTimeoutMS}`;
 }
 
 const READ_OPERATIONS = new Set([
@@ -24,11 +26,12 @@ const READ_OPERATIONS = new Set([
   "aggregate",
   "groupBy",
 ]);
-const CACHE_VERSION = 7;
+const CACHE_VERSION = 10;
+const STALE_MS = 3 * 60 * 1000;
 const CACHE_TTL_MS = 20_000;
 
 const bypassReadCache = new AsyncLocalStorage<true>();
-const memory = new Map<string, { value: unknown; expires: number; generation: number }>();
+const memory = new Map<string, { value: unknown; expires: number; generation: number; storedAt: number }>();
 const inflight = new Map<string, Promise<unknown>>();
 let generation = 0;
 
@@ -47,9 +50,14 @@ function remember<T>(key: string, load: () => Promise<T>): Promise<T> {
   const promise = load()
     .then((value) => {
       if (started === generation) {
-        memory.set(key, { value: copy(value), expires: Date.now() + CACHE_TTL_MS, generation });
+        memory.set(key, { value: copy(value), expires: Date.now() + CACHE_TTL_MS, generation, storedAt: Date.now() });
       }
       return value;
+    })
+    .catch((error: unknown) => {
+      const stale = memory.get(key);
+      if (isTransientDbError(error) && stale && Date.now() - stale.storedAt < STALE_MS) return copy(stale.value);
+      throw error;
     })
     .finally(() => {
       if (inflight.get(key) === promise) inflight.delete(key);
@@ -63,44 +71,66 @@ function clearReadCache() {
   memory.clear();
 }
 
-function transientDbError(error: unknown) {
+export function isTransientDbError(error: unknown) {
   const message = error instanceof Error ? error.message : "";
   return message.includes("DNS resolution")
+    || message.includes("hostname resolution")
+    || message.includes("unreachable network")
     || message.includes("I/O error: timed out")
     || message.includes("Server selection timeout")
-    || message.includes("ReplicaSetNoPrimary");
+    || message.includes("server monitor timeout")
+    || message.includes("ReplicaSetNoPrimary")
+    || message.includes("RetryableWriteError");
 }
 
-async function readWithRetry<T>(query: (args: T) => Promise<unknown>, args: T) {
-  try {
-    return await query(args);
-  } catch (error) {
-    if (!transientDbError(error)) throw error;
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    return query(args);
+async function readWithRetry(load: () => Promise<unknown>) {
+  let last: unknown;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await load();
+    } catch (error) {
+      last = error;
+      if (!isTransientDbError(error) || attempt === 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
   }
+  throw last;
+}
+
+let activeReader: PrismaClient | undefined;
+
+function readOperation(model: string, operation: string, args: unknown) {
+  const delegateName = `${model.charAt(0).toLowerCase()}${model.slice(1)}`;
+  const delegate = (activeReader as unknown as Record<string, Record<string, (value: unknown) => Promise<unknown>>>)[delegateName];
+  if (!delegate?.[operation]) return Promise.reject(new Error(`Cannot read ${model}.${operation}.`));
+  return delegate[operation](args);
 }
 
 function createPrisma() {
-  const base = new PrismaClient({
-    datasources: { db: { url: clientDatabaseUrl() } },
-    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  const log = process.env.NODE_ENV === "development" ? ["error", "warn"] as const : ["error"] as const;
+  const reader = new PrismaClient({
+    datasources: { db: { url: clientDatabaseUrl("primaryPreferred", 8_000) } },
+    log: [...log],
   });
-  const extended = base.$extends({
+  activeReader = reader;
+  const writer = new PrismaClient({
+    datasources: { db: { url: clientDatabaseUrl("primary", 20_000) } },
+    log: [...log],
+  });
+  const extended = writer.$extends({
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          if (!READ_OPERATIONS.has(operation)) {
-            clearReadCache();
+          if (!READ_OPERATIONS.has(operation) || bypassReadCache.getStore()) {
+            if (!READ_OPERATIONS.has(operation)) clearReadCache();
             return query(args);
           }
-          const load = () => readWithRetry(query, args);
-          if (bypassReadCache.getStore()) return load();
-          return remember(`${model}:${operation}:${JSON.stringify(args)}`, load);
+          return remember(`${model}:${operation}:${JSON.stringify(args)}`, () => readWithRetry(() => readOperation(model, operation, args)));
         },
       },
     },
   });
+  Object.defineProperty(extended, "__reader", { value: reader });
   const transaction = extended.$transaction.bind(extended);
   Object.defineProperty(extended, "$transaction", {
     configurable: true,
@@ -120,16 +150,23 @@ function createPrisma() {
   return extended;
 }
 
-type AppPrisma = ReturnType<typeof createPrisma>;
+type AppPrisma = ReturnType<typeof createPrisma> & { __reader?: PrismaClient };
 
 const globalForPrisma = globalThis as unknown as { prisma?: AppPrisma; prismaCacheVersion?: number };
 
 if (globalForPrisma.prisma && globalForPrisma.prismaCacheVersion !== CACHE_VERSION) {
   void globalForPrisma.prisma.$disconnect();
+  void globalForPrisma.prisma.__reader?.$disconnect();
   globalForPrisma.prisma = undefined;
 }
 
 export const prisma = globalForPrisma.prisma ?? createPrisma();
+
+export function pingDatabaseConnection() {
+  const reader = (prisma as AppPrisma).__reader;
+  if (!reader) throw new Error("Database client is not ready.");
+  return reader.$runCommandRaw({ ping: 1 });
+}
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;

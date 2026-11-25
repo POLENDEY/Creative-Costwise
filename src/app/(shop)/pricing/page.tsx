@@ -16,6 +16,7 @@ import { getPlanCatalog } from "@/lib/plan-catalog";
 import { PlanPaymentForm } from "@/components/plan-payment-form";
 import { paymentMethodLabel } from "@/lib/plan-payment-options";
 import { getPlanPaymentDetails, getPlanPaymentsForUser, hasPlanPaymentDetails } from "@/lib/plan-payments";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 const freeFeatures = ["Overview", "Materials", "Print hub", "Customers", "Settings", "Guide & FAQs"];
 
@@ -25,7 +26,7 @@ const paymentStatusLabels: Record<string, string> = {
   rejected: "Not accepted",
 };
 
-export default async function PricingPage() {
+async function PricingPage() {
   const user = await requireCrafter();
   const prices = await getPlanCatalog();
   const currentPlan = planFromPrices(user.plan, prices);
@@ -177,3 +178,5 @@ export default async function PricingPage() {
     </div>
   );
 }
+
+export default withDatabasePage(PricingPage);

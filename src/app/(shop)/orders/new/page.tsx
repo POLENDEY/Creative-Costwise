@@ -4,12 +4,13 @@ import { formatIsoDate } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 function moneyInput(minor: number) {
   return (minor / 100).toFixed(2);
 }
 
-export default async function NewOrderPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
+async function NewOrderPage({ searchParams }: { searchParams: Promise<{ from?: string }> }) {
   const user = await requireCrafter("orders");
   const { from } = await searchParams;
   const [settings, customers, products, bundles, digitals, source] = await Promise.all([
@@ -71,3 +72,5 @@ export default async function NewOrderPage({ searchParams }: { searchParams: Pro
     </section>
   </div>;
 }
+
+export default withDatabasePage(NewOrderPage);

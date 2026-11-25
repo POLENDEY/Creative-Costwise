@@ -2,8 +2,9 @@ import { PromotionDesk } from "@/components/promotion-desk";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function PromotionsPage() {
+async function PromotionsPage() {
   const user = await requireCrafter("promotions");
   const [settings, promotions] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
@@ -28,3 +29,5 @@ export default async function PromotionsPage() {
     />
   </div>;
 }
+
+export default withDatabasePage(PromotionsPage);

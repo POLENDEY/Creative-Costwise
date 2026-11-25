@@ -14,8 +14,9 @@ import {
   type PlanFeatureKey,
 } from "@/lib/plan-features";
 import { SignOutButton } from "@/components/sign-out-button";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function PlanLockedPage({ searchParams }: { searchParams: Promise<{ feature?: string }> }) {
+async function PlanLockedPage({ searchParams }: { searchParams: Promise<{ feature?: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
   const user = await prisma.user.findUnique({
@@ -52,3 +53,5 @@ export default async function PlanLockedPage({ searchParams }: { searchParams: P
     </main>
   );
 }
+
+export default withDatabasePage(PlanLockedPage);

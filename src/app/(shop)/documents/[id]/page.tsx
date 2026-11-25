@@ -8,8 +8,9 @@ import { formatMoney, resolveCurrency } from "@/lib/money";
 import { PAYMENT_STATUSES } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
+async function DocumentPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireCrafter("documents");
   const { id } = await params;
   const [document, lines] = await Promise.all([
@@ -71,3 +72,5 @@ export default async function DocumentPage({ params }: { params: Promise<{ id: s
     <Link href="/documents" className="button button-secondary no-print">All documents</Link>
   </div>;
 }
+
+export default withDatabasePage(DocumentPage);

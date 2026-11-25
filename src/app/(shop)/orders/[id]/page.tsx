@@ -5,6 +5,7 @@ import { DELIVERY_METHODS, formatIsoDate, ORDER_STAGES, orderTotals, PAYMENT_STA
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 function moneyInput(minor: number) {
   return (minor / 100).toFixed(2);
@@ -14,7 +15,7 @@ function labelFor(options: readonly { id: string; label: string }[], id: string)
   return options.find((option) => option.id === id)?.label ?? id;
 }
 
-export default async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+async function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireCrafter("orders");
   const { id } = await params;
   const [order, lines, history, sale, customers, products, bundles, digitals] = await Promise.all([
@@ -101,3 +102,5 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     </section>
   </div>;
 }
+
+export default withDatabasePage(OrderDetailPage);

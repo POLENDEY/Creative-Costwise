@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { pingDatabaseConnection } from "@/lib/prisma";
 
 const PING_INTERVAL_MS = 10_000;
 
@@ -14,7 +14,7 @@ async function pingDatabase() {
   if (pingInFlight || Date.now() < nextPingAt) return;
   pingInFlight = true;
   try {
-    await prisma.$runCommandRaw({ ping: 1 });
+    await pingDatabaseConnection();
     nextPingAt = 0;
   } catch (error) {
     nextPingAt = Date.now() + 60_000;
@@ -31,14 +31,14 @@ async function pingDatabase() {
 export function startDatabaseKeepAlive() {
   if (globalForKeepAlive.databaseKeepAlive) return;
   const timer = setInterval(() => {
-    void pingDatabase().catch((error: unknown) => {
+    void pingDatabase().catch(() => {
       globalForKeepAlive.databaseKeepAliveReady = false;
-      console.error("Database keepalive ping failed.", error);
+      console.error("Database keepalive ping failed.");
     });
   }, PING_INTERVAL_MS);
   timer.unref?.();
   globalForKeepAlive.databaseKeepAlive = timer;
-  void pingDatabase().catch((error: unknown) => {
-    console.error("Database keepalive ping failed.", error);
+  void pingDatabase().catch(() => {
+    console.error("Database keepalive ping failed.");
   });
 }

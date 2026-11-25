@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { LogoUploader } from "@/components/logo-uploader";
 import { PasswordChangeForm } from "@/components/password-change-form";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 const themes = [
   ["pink", "#BE185D", "Pink"],
@@ -17,7 +18,7 @@ const themes = [
   ["black", "#171717", "Black"],
 ] as const;
 
-export default async function SettingsPage() {
+async function SettingsPage() {
   const user = await requireCrafter();
   const settings = await prisma.shopSettings.findUnique({ where: { userId: user.id } });
   return (
@@ -50,3 +51,5 @@ export default async function SettingsPage() {
     </div>
   );
 }
+
+export default withDatabasePage(SettingsPage);

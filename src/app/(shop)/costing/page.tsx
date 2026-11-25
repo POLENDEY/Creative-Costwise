@@ -3,12 +3,13 @@ import { requireCrafter } from "@/lib/session";
 import { CostingWorkspace } from "@/components/costing-workspace";
 import { resolveCurrency } from "@/lib/money";
 import { z } from "zod";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 const paperSizeSchema = z.enum(["A4", "A5", "A3", "LETTER", "LEGAL"]);
 const qualitySchema = z.enum(["draft", "standard", "best"]);
 const coverageSchema = z.enum(["black_white", "light_color", "normal_color", "photo_heavy"]);
 
-export default async function CostingPage({
+async function CostingPage({
   searchParams,
 }: {
   searchParams: Promise<{ tab?: string }>;
@@ -91,3 +92,5 @@ export default async function CostingPage({
     requestedTabId={requestedTabId}
   />;
 }
+
+export default withDatabasePage(CostingPage);

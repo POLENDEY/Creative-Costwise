@@ -2,8 +2,9 @@ import { BundleStudio } from "@/components/bundle-studio";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function BundlesPage() {
+async function BundlesPage() {
   const user = await requireCrafter("bundles");
   const [settings, products, bundles, items] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
@@ -36,3 +37,5 @@ export default async function BundlesPage() {
     />
   </div>;
 }
+
+export default withDatabasePage(BundlesPage);

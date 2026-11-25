@@ -2,8 +2,9 @@ import { DigitalShelf } from "@/components/digital-shelf";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function DigitalPage() {
+async function DigitalPage() {
   const user = await requireCrafter("digital");
   const [settings, products] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
@@ -25,3 +26,5 @@ export default async function DigitalPage() {
     />
   </div>;
 }
+
+export default withDatabasePage(DigitalPage);

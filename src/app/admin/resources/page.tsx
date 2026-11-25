@@ -4,8 +4,9 @@ import { deleteTemplateEntry, saveResourceLinks, saveTemplateEntry } from "@/act
 import { requireAdminSession } from "@/lib/admin-session";
 import { RESOURCE_SETTINGS_ID } from "@/lib/resources";
 import { prisma } from "@/lib/prisma";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function AdminResourcesPage() {
+async function AdminResourcesPage() {
   await requireAdminSession();
   const [settings, templates, wishes] = await Promise.all([
     prisma.resourceSettings.findUnique({ where: { id: RESOURCE_SETTINGS_ID } }),
@@ -98,3 +99,5 @@ export default async function AdminResourcesPage() {
     </div>
   );
 }
+
+export default withDatabasePage(AdminResourcesPage);

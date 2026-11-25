@@ -1,8 +1,9 @@
 import { AppFrame } from "@/components/app-frame";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function ShopLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+async function ShopLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const user = await requireCrafter();
   const [settings, notifications] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
@@ -29,3 +30,5 @@ export default async function ShopLayout({ children }: Readonly<{ children: Reac
     </div>
   );
 }
+
+export default withDatabasePage(ShopLayout);

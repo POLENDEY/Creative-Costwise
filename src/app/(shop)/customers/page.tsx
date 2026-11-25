@@ -1,8 +1,9 @@
 import { CustomerBook } from "@/components/customer-book";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function CustomersPage() {
+async function CustomersPage() {
   const user = await requireCrafter();
   const customers = await prisma.customer.findMany({
     where: { userId: user.id },
@@ -23,3 +24,5 @@ export default async function CustomersPage() {
     }))} />
   </div>;
 }
+
+export default withDatabasePage(CustomersPage);

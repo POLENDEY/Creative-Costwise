@@ -5,8 +5,9 @@ import { orderTotals, formatIsoDate, isOrderStage } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function OrdersPage() {
+async function OrdersPage() {
   const user = await requireCrafter("orders");
   const [settings, orders, lines] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id }, select: { currency: true } }),
@@ -46,3 +47,5 @@ export default async function OrdersPage() {
     <OrderBoard orders={boardOrders} currency={currency} />
   </div>;
 }
+
+export default withDatabasePage(OrdersPage);

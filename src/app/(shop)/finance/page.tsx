@@ -4,6 +4,7 @@ import { requireCrafter } from "@/lib/session";
 import { CompareChart } from "@/components/compare-chart";
 import { financeDaily, financeSummary, financeWindow, type FinanceRange } from "@/lib/finance";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 const ranges: { id: FinanceRange; label: string }[] = [
   { id: "week", label: "This week" },
@@ -11,7 +12,7 @@ const ranges: { id: FinanceRange; label: string }[] = [
   { id: "month", label: "This month" },
 ];
 
-export default async function FinancePage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
+async function FinancePage({ searchParams }: { searchParams: Promise<{ range?: string }> }) {
   const user = await requireCrafter("finance");
   const { range: requested } = await searchParams;
   const range: FinanceRange = requested === "week" || requested === "seven" ? requested : "month";
@@ -78,3 +79,5 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     </section>
   </div>;
 }
+
+export default withDatabasePage(FinancePage);

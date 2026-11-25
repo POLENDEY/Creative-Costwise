@@ -16,8 +16,9 @@ import { formatMoney, resolveCurrency } from "@/lib/money";
 import { checklistSteps, parseChecklist } from "@/lib/checklist";
 import { toggleChecklistStep } from "@/actions/shop";
 import { CurrencyMark } from "@/components/currency-mark";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function DashboardPage() {
+async function DashboardPage() {
   const user = await requireCrafter();
   const month = financeWindow("month", new Date());
   const [settings, materials, printers, tabs, priceSets, sales, expenses] = await Promise.all([
@@ -121,3 +122,5 @@ export default async function DashboardPage() {
     </div>
   );
 }
+
+export default withDatabasePage(DashboardPage);

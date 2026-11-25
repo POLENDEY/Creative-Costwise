@@ -3,8 +3,9 @@ import { requireAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { AdminPlanPayments } from "@/components/admin-plan-payments";
 import { getPlanPaymentDetails } from "@/lib/plan-payments";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function AdminPaymentsPage() {
+async function AdminPaymentsPage() {
   await requireAdminSession();
   const [payments, settings] = await Promise.all([
     prisma.planPayment.findMany({
@@ -57,3 +58,5 @@ export default async function AdminPaymentsPage() {
     </div>
   );
 }
+
+export default withDatabasePage(AdminPaymentsPage);

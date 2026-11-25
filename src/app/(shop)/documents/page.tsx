@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { documentTotals } from "@/lib/documents";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function DocumentsPage() {
+async function DocumentsPage() {
   const user = await requireCrafter("documents");
   const [documents, lines] = await Promise.all([
     prisma.businessDocument.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } }),
@@ -38,3 +39,5 @@ export default async function DocumentsPage() {
     })}</ul></section> : <section className="panel"><p className="empty-copy">Create an invoice on its own, or open an order and make an invoice or a receipt from it.</p></section>}
   </div>;
 }
+
+export default withDatabasePage(DocumentsPage);

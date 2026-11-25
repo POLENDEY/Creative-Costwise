@@ -7,8 +7,9 @@ import { calculateMaterialCostPerPiece } from "@/lib/costing";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function MaterialsPage() {
+async function MaterialsPage() {
   const user = await requireCrafter();
   const [settings, materials, savedCategories, movements, supplierOrders] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id }, select: { currency: true } }),
@@ -140,3 +141,5 @@ export default async function MaterialsPage() {
     </div>
   );
 }
+
+export default withDatabasePage(MaterialsPage);

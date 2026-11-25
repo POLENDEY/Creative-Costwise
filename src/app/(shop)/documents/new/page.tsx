@@ -4,12 +4,13 @@ import { DocumentForm, type DocumentDraft } from "@/components/document-form";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
 function moneyInput(minor: number) {
   return (minor / 100).toFixed(2);
 }
 
-export default async function NewDocumentPage({ searchParams }: { searchParams: Promise<{ order?: string; kind?: string }> }) {
+async function NewDocumentPage({ searchParams }: { searchParams: Promise<{ order?: string; kind?: string }> }) {
   const user = await requireCrafter("documents");
   const { order: orderId, kind: requestedKind } = await searchParams;
   const kind = requestedKind === "receipt" ? "receipt" : "invoice";
@@ -57,3 +58,5 @@ export default async function NewDocumentPage({ searchParams }: { searchParams: 
     <section className="panel"><DocumentForm currency={currency} initial={initial} /></section>
   </div>;
 }
+
+export default withDatabasePage(NewDocumentPage);

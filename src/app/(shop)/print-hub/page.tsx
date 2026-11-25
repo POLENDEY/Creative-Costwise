@@ -6,8 +6,9 @@ import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { calculatePrinterBaseCosts } from "@/lib/costing";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { withDatabasePage } from "@/lib/with-database-page";
 
-export default async function PrintHubPage() {
+async function PrintHubPage() {
   const user = await requireCrafter();
   const [settings, printers, supplies, templates] = await Promise.all([
     prisma.shopSettings.findUnique({ where: { userId: user.id } }),
@@ -66,3 +67,5 @@ export default async function PrintHubPage() {
     </div>
   );
 }
+
+export default withDatabasePage(PrintHubPage);
