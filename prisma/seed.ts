@@ -836,8 +836,8 @@ async function seedAdmin(passwordHash: string, miaId: string) {
           status,
           currency: "PHP",
           note,
-          response: status === "pending" ? "" : `Sample reply: this ${productName} request is ${status.replaceAll("_", " ")}.`,
-          respondedAt: status === "pending" ? null : day(-index),
+          response: `Sample reply: this ${productName} request is ${status.replaceAll("_", " ")}.`,
+          respondedAt: day(-index),
           lines: {
             create: {
               productName,

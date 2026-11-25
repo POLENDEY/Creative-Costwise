@@ -51,11 +51,13 @@ async function FinancePage({ searchParams }: { searchParams: Promise<{ range?: s
         <Link key={item.id} href={`/finance?range=${item.id}`} aria-current={range === item.id ? "page" : undefined}>{item.label}</Link>
       ))}
     </nav>
-    <CompareChart title="Revenue and expenses by day" rows={financeDaily({ from, to, sales, expenses })} />
-    <div className="material-summary-row">
-      <div className="material-summary-card summary-figure"><span><b>{formatMoney(summary.revenueMinor, currency)}</b><small>product revenue</small></span></div>
-      <div className="material-summary-card summary-figure"><span><b>{formatMoney(summary.expenseMinor, currency)}</b><small>expenses</small></span></div>
-      <div className={`material-summary-card summary-figure ${summary.profitMinor < 0 ? "is-negative" : ""}`}><span><b>{formatMoney(summary.profitMinor, currency)}</b><small>revenue minus expenses</small></span></div>
+    <section className="finance-chart-card">
+      <CompareChart title="Revenue and expenses by day" rows={financeDaily({ from, to, sales, expenses })} />
+    </section>
+    <div className="finance-summary">
+      <div className="finance-stat is-revenue"><span>Money in</span><b>{formatMoney(summary.revenueMinor, currency)}</b><small>product revenue</small></div>
+      <div className="finance-stat is-expense"><span>Money out</span><b>{formatMoney(summary.expenseMinor, currency)}</b><small>restocks and supplies</small></div>
+      <div className={`finance-stat ${summary.profitMinor < 0 ? "is-loss" : "is-profit"}`}><span>{summary.profitMinor < 0 ? "Short by" : "Kept"}</span><b>{formatMoney(summary.profitMinor, currency)}</b><small>revenue minus expenses</small></div>
     </div>
     <section className="panel">
       <div className="panel-heading"><div><span className="eyebrow">SALES</span><h2>Delivered orders</h2></div></div>

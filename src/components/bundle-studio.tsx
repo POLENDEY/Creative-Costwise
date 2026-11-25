@@ -11,12 +11,21 @@ type BundleRecord = { id: string; name: string; priceMinor: number; items: { pri
 export function BundleStudio({ products, bundles, currency }: { products: ProductOption[]; bundles: BundleRecord[]; currency: Currency }) {
   return <div className="stack-sections">
     {bundles.length > 0 && <section className="panel">
-      <div className="panel-heading"><div><span className="eyebrow">SAVED BUNDLES</span><h2>Offers you can sell</h2></div></div>
-      <ul className="movement-list">{bundles.map((bundle) => {
+      <div className="panel-heading"><div><span className="eyebrow">SAVED BUNDLES</span><h2>Offers you can sell</h2><p>Each bundle keeps its price, its products, and the saving it gives a customer.</p></div></div>
+      <ul className="saved-offers">{bundles.map((bundle) => {
         const totals = describeBundle(bundle, products);
-        return <li key={bundle.id}>
-          <div><b>{bundle.name}</b><small>{formatMoney(bundle.priceMinor, currency)} · saves {formatMoney(totals?.savingsMinor ?? 0, currency)}</small>{totals?.belowCost && <small>This price is below the production cost.</small>}</div>
-          <details><summary>Edit</summary><BundleForm products={products} currency={currency} bundle={bundle} /></details>
+        const count = bundle.items.reduce((carry, item) => carry + item.quantity, 0);
+        return <li className="saved-offer" key={bundle.id}>
+          <div className="saved-offer-main">
+            <b>{bundle.name}</b>
+            <small>{count} product{count === 1 ? "" : "s"} · regular {formatMoney(totals?.regularMinor ?? 0, currency)}</small>
+            {totals?.belowCost && <span className="saved-offer-warn">Below production cost</span>}
+          </div>
+          <div className="saved-offer-price">
+            <b>{formatMoney(bundle.priceMinor, currency)}</b>
+            <small>Saves {formatMoney(totals?.savingsMinor ?? 0, currency)}</small>
+          </div>
+          <details className="saved-offer-edit"><summary className="button button-secondary">Edit</summary><BundleForm products={products} currency={currency} bundle={bundle} /></details>
         </li>;
       })}</ul>
     </section>}

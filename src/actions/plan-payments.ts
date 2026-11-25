@@ -12,16 +12,30 @@ import { convertImageUploadToAvif } from "@/lib/images";
 import { addPlanMonths, PLAN_KEYS, planFromPrices, planMonths } from "@/lib/plans";
 import { getPlanCatalog } from "@/lib/plan-catalog";
 import { isPlanPaymentMethod } from "@/lib/plan-payment-options";
-import { notifyAdminsOfPlanPayment } from "@/lib/plan-payments";
+import {
+  notifyAdminsOfPlanPayment,
+  notifyCrafterOfPlanPaymentDecision,
+  sendPlanPaymentReceipt,
+} from "@/lib/plan-payments";
 
 const PROOF_ROOT = path.join(process.cwd(), "private-uploads");
-const QR_ROOT = path.join(process.cwd(), "public", "uploads", "plan-payments", "qr");
+const QR_ROOT = path.join(process.cwd(), "private-uploads", "plan-payments-qr");
+/** QR codes saved by an earlier version lived in the public folder. */
+const LEGACY_QR_ROOT = path.join(process.cwd(), "public", "uploads", "plan-payments", "qr");
 
-async function removeStoredFile(root: string, storedPath: string) {
-  const relative = storedPath.replace(/^\/+/, "").replace(/^uploads\/plan-payments\/qr\//, "");
-  const filePath = path.resolve(root, root === QR_ROOT ? path.basename(storedPath) : relative);
-  if (filePath !== root && filePath.startsWith(root + path.sep)) {
+async function removeProofFile(storedPath: string) {
+  if (!storedPath) return;
+  const filePath = path.resolve(PROOF_ROOT, storedPath);
+  if (filePath.startsWith(PROOF_ROOT + path.sep)) {
     await rm(filePath, { force: true });
+  }
+}
+
+async function removeQrFile(storedPath: string | null | undefined) {
+  const filename = storedPath ? path.basename(storedPath) : "";
+  if (!filename) return;
+  for (const root of [QR_ROOT, LEGACY_QR_ROOT]) {
+    await rm(path.join(root, filename), { force: true });
   }
 }
 
@@ -94,13 +108,36 @@ export async function submitPlanPayment(formData: FormData) {
     submittedAt,
   });
 
+  // Both sides keep the same record: the admin gets the proof to review, the
+  // crafter gets a receipt saying the screenshot arrived.
+  const receipt = await sendPlanPaymentReceipt({
+    paymentId: payment.id,
+    crafterName: user.name,
+    crafterEmail: user.email,
+    plan: plan.key,
+    amountMinor: plan.priceMinor,
+    method: parsed.data.method,
+    reference: parsed.data.reference,
+    note: parsed.data.note,
+    submittedAt,
+  });
+
+  const note = notice.sent && receipt.sent
+    ? "Your admin was emailed the screenshot, and your receipt is on its way to your inbox."
+    : receipt.sent
+      ? "A receipt is on its way to your inbox. The admin also sees the proof in the admin workspace."
+      : notice.sent
+        ? "Your admin was emailed and has the screenshot in the admin workspace."
+        : `${notice.reason} ${receipt.reason}`.trim();
+
   revalidatePath("/pricing");
   revalidatePath("/admin/payments");
   revalidatePath("/admin", "layout");
   return {
     plan: plan.label,
     emailSent: notice.sent,
-    note: notice.sent ? "Your admin was emailed and has the screenshot in the admin workspace." : notice.reason,
+    crafterEmailed: receipt.sent,
+    note,
   };
 }
 
@@ -121,12 +158,13 @@ export async function reviewPlanPayment(formData: FormData) {
 
   const payment = await prisma.planPayment.findUnique({
     where: { id: parsed.data.paymentId },
-    include: { user: { select: { id: true, plan: true, expiresAt: true } } },
+    include: { user: { select: { id: true, name: true, email: true, plan: true, expiresAt: true } } },
   });
   if (!payment) throw new Error("That payment proof could not be found.");
   if (payment.status !== "pending") throw new Error("This payment proof was already reviewed.");
 
   const reviewedAt = new Date();
+  let renewedUntil: Date | null = null;
   if (parsed.data.decision === "reject") {
     await prisma.planPayment.update({
       where: { id: payment.id },
@@ -141,6 +179,7 @@ export async function reviewPlanPayment(formData: FormData) {
     const now = new Date();
     const start = payment.user.expiresAt && payment.user.expiresAt > now ? payment.user.expiresAt : now;
     const expiresAt = addPlanMonths(start, planMonths(payment.plan));
+    renewedUntil = expiresAt;
     await prisma.$transaction(async (tx) => {
       await tx.planPayment.update({
         where: { id: payment.id },
@@ -165,10 +204,27 @@ export async function reviewPlanPayment(formData: FormData) {
     });
   }
 
+  const decisionNotice = await notifyCrafterOfPlanPaymentDecision({
+    crafterId: payment.user.id,
+    crafterName: payment.user.name,
+    crafterEmail: payment.user.email,
+    plan: payment.plan,
+    amountMinor: payment.amountMinor,
+    decision: parsed.data.decision,
+    adminNote: parsed.data.adminNote,
+    expiresAt: renewedUntil,
+  });
+
   revalidatePath("/admin/payments");
   revalidatePath("/admin/users");
   revalidatePath("/pricing");
   revalidatePath("/", "layout");
+  return {
+    emailed: decisionNotice.sent,
+    note: decisionNotice.sent
+      ? "The crafter has an in-app notification and an email."
+      : `The crafter has an in-app notification. ${decisionNotice.reason}`,
+  };
 }
 
 export async function deletePlanPayment(paymentId: string) {
@@ -180,7 +236,7 @@ export async function deletePlanPayment(paymentId: string) {
   });
   if (!payment) return;
   await prisma.planPayment.delete({ where: { id: payment.id } });
-  if (payment.proofPath) await removeStoredFile(PROOF_ROOT, payment.proofPath);
+  await removeProofFile(payment.proofPath);
   revalidatePath("/admin/payments");
   revalidatePath("/pricing");
 }
@@ -196,7 +252,7 @@ export async function deletePlanPaymentQr() {
     where: { id: "plan-payments" },
     data: { qrPath: null },
   });
-  await removeStoredFile(QR_ROOT, settings.qrPath);
+  await removeQrFile(settings.qrPath);
   revalidatePath("/admin/payments");
   revalidatePath("/pricing");
 }
@@ -232,11 +288,10 @@ export async function savePlanPaymentSettings(formData: FormData) {
       maxDimension: 1200,
       quality: 85,
     });
-    const directory = path.join(process.cwd(), "public", "uploads", "plan-payments", "qr");
-    await mkdir(directory, { recursive: true });
+    await mkdir(QR_ROOT, { recursive: true });
     const filename = `payment-qr-${randomUUID()}.avif`;
-    await writeFile(path.join(directory, filename), image.buffer, { flag: "wx" });
-    qrPath = `/uploads/plan-payments/qr/${filename}`;
+    await writeFile(path.join(QR_ROOT, filename), image.buffer, { flag: "wx" });
+    qrPath = filename;
   }
 
   await prisma.planPaymentSettings.upsert({
@@ -244,8 +299,8 @@ export async function savePlanPaymentSettings(formData: FormData) {
     update: { ...parsed.data, ...(qrPath ? { qrPath } : {}) },
     create: { id: "plan-payments", ...parsed.data, qrPath: qrPath ?? null },
   });
-  if (qrPath && previous?.qrPath && previous.qrPath !== qrPath) {
-    await removeStoredFile(QR_ROOT, previous.qrPath);
+  if (qrPath && previous?.qrPath && path.basename(previous.qrPath) !== qrPath) {
+    await removeQrFile(previous.qrPath);
   }
 
   revalidatePath("/admin/payments");

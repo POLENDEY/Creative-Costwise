@@ -63,7 +63,7 @@ function remember<T>(key: string, load: () => Promise<T>): Promise<T> {
       if (inflight.get(key) === promise) inflight.delete(key);
     });
   inflight.set(key, promise);
-  return promise;
+  return promise as Promise<T>;
 }
 
 function clearReadCache() {

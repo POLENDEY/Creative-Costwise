@@ -76,8 +76,23 @@ export function PromotionDesk({ promotions, currency }: { promotions: PromotionR
       </form>
     </section>
     <section className="panel">
-      <div className="panel-heading"><div><span className="eyebrow">SAVED</span><h2>Promotions</h2></div></div>
-      {promotions.length ? <ul className="movement-list">{promotions.map((promotion) => <li key={promotion.id}><b>{promotion.code || "No code"}</b><span>{formatMoney(promotion.originalMinor, currency)} → {formatMoney(promotion.saleMinor, currency)}</span><small>Discount {formatMoney(promotion.discountMinor, currency)}{promotion.note ? ` · ${promotion.note}` : ""}{promotion.upcomingNote ? ` · Upcoming: ${promotion.upcomingNote}` : ""}</small></li>)}</ul> : <p className="empty-copy">A saved promotion keeps the sale price you calculated.</p>}
+      <div className="panel-heading"><div><span className="eyebrow">SAVED</span><h2>Promotions</h2><p>Every sale price you keep, with the code that unlocks it.</p></div></div>
+      {promotions.length ? <ul className="promo-grid">{promotions.map((promotion) => {
+        const percent = promotion.originalMinor > 0 ? Math.round((promotion.discountMinor / promotion.originalMinor) * 100) : 0;
+        return <li className="promo-card" key={promotion.id}>
+          <div className="promo-card-head">
+            <span className="promo-code">{promotion.code || "No code"}</span>
+            <span className="promo-off">−{percent}%</span>
+          </div>
+          <div className="promo-prices">
+            <s>{formatMoney(promotion.originalMinor, currency)}</s>
+            <b>{formatMoney(promotion.saleMinor, currency)}</b>
+          </div>
+          <small className="promo-saves">Customer saves {formatMoney(promotion.discountMinor, currency)}</small>
+          {promotion.note && <p className="promo-note">{promotion.note}</p>}
+          {promotion.upcomingNote && <p className="promo-note promo-note-upcoming">Upcoming · {promotion.upcomingNote}</p>}
+        </li>;
+      })}</ul> : <p className="empty-copy">A saved promotion keeps the sale price you calculated.</p>}
     </section>
   </div>;
 }

@@ -14,6 +14,7 @@ import {
 } from "@/lib/plans";
 import { getPlanCatalog } from "@/lib/plan-catalog";
 import { PlanPaymentForm } from "@/components/plan-payment-form";
+import { ImageLightbox } from "@/components/image-lightbox";
 import { paymentMethodLabel } from "@/lib/plan-payment-options";
 import { getPlanPaymentDetails, getPlanPaymentsForUser, hasPlanPaymentDetails } from "@/lib/plan-payments";
 import { withDatabasePage } from "@/lib/with-database-page";
@@ -105,8 +106,22 @@ async function PricingPage() {
 
         <div className="plan-pay-grid">
           <div className="plan-pay-details">
-            {paymentDetails.qrPath ? (
-              <Image className="plan-pay-qr" src={paymentDetails.qrPath} alt="Scan this QR code to pay" width={168} height={168} />
+            {paymentDetails.qrUrl ? (
+              <ImageLightbox
+                src={paymentDetails.qrUrl}
+                alt="Payment QR code"
+                title="Payment QR code"
+                subtitle="Scan it in your GCash, Maya, or bank app"
+                triggerClassName="plan-pay-qr-link"
+                details={[
+                  { label: "Account name", value: paymentDetails.accountName || "Ask your admin" },
+                  { label: "GCash", value: paymentDetails.gcashNumber || "Not set" },
+                  { label: "Maya", value: paymentDetails.mayaNumber || "Not set" },
+                  { label: "Bank", value: paymentDetails.bankDetails || "Not set" },
+                ]}
+              >
+                <Image className="plan-pay-qr" src={paymentDetails.qrUrl} alt="" width={168} height={168} unoptimized />
+              </ImageLightbox>
             ) : (
               <span className="plan-pay-qr-empty"><QrCode size={20} /> QR code not added yet</span>
             )}

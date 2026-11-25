@@ -5,33 +5,68 @@ type Row = { label: string; revenue: number; expense: number };
 export function CompareChart({ title, rows }: { title: string; rows: Row[] }) {
   const active = rows.filter((row) => row.revenue > 0 || row.expense > 0);
   if (!active.length) return null;
+
   const max = Math.max(1, ...active.flatMap((row) => [row.revenue, row.expense]));
-  const width = 640;
-  const height = 168;
-  const pad = 8;
-  const group = (width - pad * 2) / active.length;
-  const bar = Math.max(3, group * 0.28);
+  const width = 900;
+  const height = 260;
+  const left = 16;
+  const right = 16;
+  const top = 18;
+  const bottom = 34;
+  const plotHeight = height - top - bottom;
+  const group = (width - left - right) / active.length;
+  const barWidth = Math.max(8, Math.min(26, group * 0.24));
+  const gap = Math.max(3, barWidth * 0.18);
   const summary = active
     .map((row) => `${row.label}: revenue ${row.revenue}, expenses ${row.expense}`)
     .join(". ");
 
+  const gridLines = [0.25, 0.5, 0.75, 1];
+
   return (
     <figure className="compare-chart">
       <figcaption>{title}</figcaption>
-      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={summary}>
-        {active.map((row, index) => {
-          const x = pad + index * group;
-          const revenueHeight = (row.revenue / max) * (height - 28);
-          const expenseHeight = (row.expense / max) * (height - 28);
-          return (
-            <g key={row.label}>
-              <rect x={x} y={height - 22 - revenueHeight} width={bar} height={revenueHeight} rx="2" fill="var(--accent)" />
-              <rect x={x + bar + 2} y={height - 22 - expenseHeight} width={bar} height={expenseHeight} rx="2" fill="var(--ink)" opacity="0.35" />
-              <text x={x} y={height - 6} fill="var(--muted)" fontSize="10">{row.label}</text>
-            </g>
-          );
-        })}
-      </svg>
+      <div className="compare-chart-frame">
+        <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={summary} preserveAspectRatio="xMidYMid meet">
+          {gridLines.map((fraction) => {
+            const y = top + plotHeight - fraction * plotHeight;
+            return <line key={fraction} x1={left} x2={width - right} y1={y} y2={y} stroke="var(--line)" strokeWidth="1" strokeDasharray={fraction === 1 ? undefined : "3 6"} />;
+          })}
+          <line x1={left} x2={width - right} y1={top + plotHeight} y2={top + plotHeight} stroke="var(--line)" strokeWidth="1.5" />
+          {active.map((row, index) => {
+            const center = left + index * group + group / 2;
+            const revenueHeight = (row.revenue / max) * plotHeight;
+            const expenseHeight = (row.expense / max) * plotHeight;
+            return (
+              <g key={row.label}>
+                <title>{`${row.label} — revenue ${row.revenue}, expenses ${row.expense}`}</title>
+                {revenueHeight > 0 && (
+                  <rect
+                    x={center - barWidth - gap / 2}
+                    y={top + plotHeight - revenueHeight}
+                    width={barWidth}
+                    height={revenueHeight}
+                    rx={Math.min(6, barWidth / 2)}
+                    fill="var(--accent)"
+                  />
+                )}
+                {expenseHeight > 0 && (
+                  <rect
+                    x={center + gap / 2}
+                    y={top + plotHeight - expenseHeight}
+                    width={barWidth}
+                    height={expenseHeight}
+                    rx={Math.min(6, barWidth / 2)}
+                    fill="var(--ink)"
+                    opacity="0.22"
+                  />
+                )}
+                <text x={center} y={height - 12} fill="var(--muted)" fontSize="12" textAnchor="middle">{row.label}</text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
       <div className="compare-legend">
         <span><i className="compare-swatch compare-swatch-revenue" /> Revenue</span>
         <span><i className="compare-swatch compare-swatch-expense" /> Expenses</span>
@@ -78,11 +113,13 @@ export function ValueChart({ title, rows, total, aside }: {
       <figcaption>{title}</figcaption>
       {slices.length > 0 && (
         <div className="compare-pie-chart">
-          <svg viewBox="0 0 180 180" role="img" aria-label={summary}>
-            {slices.map((slice) => (
-              <path key={slice.label} d={pieSlice(90, 90, 78, slice.start, slice.end)} fill={slice.color} stroke="var(--surface)" strokeWidth="2" />
-            ))}
-          </svg>
+          <div className="compare-pie-svg">
+            <svg viewBox="0 0 180 180" role="img" aria-label={summary}>
+              {slices.map((slice) => (
+                <path key={slice.label} d={pieSlice(90, 90, 78, slice.start, slice.end)} fill={slice.color} stroke="var(--surface)" strokeWidth="2" />
+              ))}
+            </svg>
+          </div>
           <ul className="compare-pie-legend">
             {slices.map((slice) => (
               <li key={slice.label}>

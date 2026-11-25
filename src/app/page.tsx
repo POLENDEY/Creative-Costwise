@@ -7,6 +7,7 @@ async function HomePage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
   redirect(session.user.role === "admin" ? "/admin/users" : "/dashboard");
+  return null;
 }
 
 export default withDatabasePage(HomePage);
