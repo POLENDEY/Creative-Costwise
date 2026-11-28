@@ -4,8 +4,15 @@ import path from "node:path";
 
 const BLOB_HOST_SUFFIX = ".blob.vercel-storage.com";
 
+function blobToken(visibility: "public" | "private") {
+  if (visibility === "public" && process.env.BLOB_PUBLIC_READ_WRITE_TOKEN) {
+    return process.env.BLOB_PUBLIC_READ_WRITE_TOKEN;
+  }
+  return process.env.BLOB_READ_WRITE_TOKEN;
+}
+
 export function blobStorageEnabled() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+  return Boolean(blobToken("private") || blobToken("public"));
 }
 
 export function isBlobReference(value: string) {
@@ -61,6 +68,7 @@ export async function saveImageFile(options: {
         access: options.visibility,
         contentType: "image/avif",
         addRandomSuffix: false,
+        token: blobToken(options.visibility),
       });
       return blob.url;
     } catch (error) {
@@ -81,7 +89,8 @@ export async function readPrivateImage(reference: string) {
   if (!reference) return null;
   if (isBlobReference(reference)) {
     try {
-      const result = await get(reference, { access: blobAccess(reference) });
+      const access = blobAccess(reference);
+      const result = await get(reference, { access, token: blobToken(access) });
       if (!result || result.statusCode !== 200 || !result.stream) return null;
       return bytesFromStream(result.stream);
     } catch {
@@ -106,7 +115,8 @@ export async function readPrivateImage(reference: string) {
 export async function deleteStoredFile(reference: string) {
   if (!isBlobReference(reference)) return;
   try {
-    await del(reference);
+    const access = blobAccess(reference);
+    await del(reference, { token: blobToken(access) });
   } catch (error) {
     console.error("[uploads] The stored image could not be removed.", error instanceof Error ? error.name : "Error");
   }
