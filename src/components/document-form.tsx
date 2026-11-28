@@ -6,6 +6,7 @@ import { saveDocument } from "@/actions/documents";
 import { documentTotals } from "@/lib/documents";
 import { formatMoney, parseMoneyToMinor, type Currency } from "@/lib/money";
 import { DELIVERY_METHODS, PAYMENT_STATUSES } from "@/lib/orders";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type DraftLine = { label: string; quantity: string; unitPrice: string };
 
@@ -94,7 +95,7 @@ export function DocumentForm({ currency, initial }: { currency: Currency; initia
       router.push(`/documents/${saved.id}`);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save this document.");
+      setError(userFacingError(cause, "Could not save this document."));
     } finally {
       setPending(false);
     }

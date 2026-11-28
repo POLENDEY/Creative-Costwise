@@ -6,6 +6,7 @@ import { Check, CircleAlert, Inbox, Send } from "lucide-react";
 import { respondToPurchaseOrder } from "@/actions/purchase-orders";
 import { ProductBreakdown } from "@/components/product-breakdown";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type OrderLine = {
   id: string;
@@ -54,7 +55,7 @@ export function AdminOrders({ orders }: { orders: PurchaseOrderRow[] }) {
         setMessage(result.emailSent ? "Your response was saved. The crafter has an in-app notification and an email." : `Your response was saved and the crafter has an in-app notification. ${result.message}`);
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The response could not be saved.");
+        setError(userFacingError(reason, "The response could not be saved."));
       }
     });
   }

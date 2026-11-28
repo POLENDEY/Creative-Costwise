@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { Fragment, useMemo, useState } from "react";
 import { AlertTriangle, ArrowDownWideNarrow, ArrowUpWideNarrow, ArrowUpRight, PackagePlus, Search, Star } from "lucide-react";
 import { restockMaterial, setMaterialCategoryStar } from "@/actions/inventory";
@@ -61,7 +63,7 @@ export function MaterialLibrary({
     try {
       await setMaterialCategoryStar(data);
     } catch (cause) {
-      setStarError(cause instanceof Error ? cause.message : "Could not update that category.");
+      setStarError(userFacingError(cause, "Could not update that category."));
     }
   }
 
@@ -150,7 +152,7 @@ function RestockForm({
       await restockMaterial(formData);
       setRequestKey(crypto.randomUUID());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not update stock.");
+      setError(userFacingError(cause, "Could not update stock."));
     } finally {
       setPending(false);
     }
@@ -161,6 +163,6 @@ function RestockForm({
     <label>Spent ({currency})<input name="amount" type="number" min="0" step="0.01" required aria-label="Amount spent" /></label>
     <label>Paid with<select name="paymentMethod" defaultValue="cash" aria-label="Payment method">{PAYMENT_METHODS.map((method) => <option value={method} key={method}>{paymentLabels[method]}</option>)}</select></label>
     <button type="submit" className="button button-primary" disabled={pending}>{pending ? "Saving…" : "Save stock"}</button>
-    {error && <small role="alert">{error}</small>}
+    {error && <small className="form-error" role="alert">{error}</small>}
   </form>;
 }

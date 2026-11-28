@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -62,7 +64,7 @@ export function AdminPlanPayments({
         setMessage("Payment details saved. Crafters now see them on the plans page.");
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The payment details could not be saved.");
+        setError(userFacingError(reason, "The payment details could not be saved."));
       }
     });
   }
@@ -76,7 +78,7 @@ export function AdminPlanPayments({
         setMessage(`${formData.get("decision") === "approve" ? "Payment approved and the plan renewed." : "Payment proof rejected."} ${result.note}`);
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The payment proof could not be updated.");
+        setError(userFacingError(reason, "The payment proof could not be updated."));
       }
     });
   }
@@ -93,7 +95,7 @@ export function AdminPlanPayments({
         setMessage("Payment proof deleted.");
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The payment proof could not be deleted.");
+        setError(userFacingError(reason, "The payment proof could not be deleted."));
       } finally {
         setDeletingId("");
       }
@@ -110,7 +112,7 @@ export function AdminPlanPayments({
         setMessage("Payment QR code deleted.");
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The QR code could not be deleted.");
+        setError(userFacingError(reason, "The QR code could not be deleted."));
       }
     });
   }

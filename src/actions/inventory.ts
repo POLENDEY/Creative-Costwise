@@ -7,6 +7,7 @@ import { expenseSourceKey, MAX_STARRED_CATEGORIES, PAYMENT_METHODS, restockToNew
 import { parseMoneyToMinor } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
+import { userFacingError } from "@/lib/user-facing-error";
 
 const starSchema = z.object({
   name: z.string().trim().min(1).max(60),
@@ -100,7 +101,7 @@ export async function restockMaterial(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
-    throw error;
+    throw new Error(userFacingError(error, "Could not update stock."));
   }
 
   revalidatePath("/materials");

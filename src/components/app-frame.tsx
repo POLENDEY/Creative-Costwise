@@ -3,10 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOutHere } from "@/components/sign-out-button";
 import { useEffect, useState } from "react";
 import { markWelcomed } from "@/app/actions";
 import { saveColorScheme } from "@/actions/shop";
+import { userFacingError } from "@/lib/user-facing-error";
 import { NotificationBell, type AppNotification } from "@/components/notification-bell";
 import {
   formatPlanDate,
@@ -128,7 +129,7 @@ export function AppFrame({
       });
       setCurrentScheme(nextScheme);
     } catch (reason) {
-      setThemeError(reason instanceof Error ? reason.message : "The color scheme could not be saved.");
+      setThemeError(userFacingError(reason, "The color scheme could not be saved."));
     } finally {
       setThemePending(false);
     }
@@ -196,7 +197,7 @@ export function AppFrame({
             <div className="profile-popover">
               <Link href="/settings" onClick={() => setProfileOpen(false)}><Settings size={16} /> Settings</Link>
               <button onClick={toggleScheme}>{currentScheme === "dark" ? <Sun size={16} /> : <Moon size={16} />} Switch to {currentScheme === "dark" ? "light" : "dark"} mode</button>
-              <button onClick={() => signOut({ callbackUrl: "/login" })}><ArrowUpRight size={16} /> Sign out</button>
+              <button onClick={() => void signOutHere()}><ArrowUpRight size={16} /> Sign out</button>
             </div>
           )}
         </div>

@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Bell, Check, Clock3 } from "lucide-react";
 import { getMyNotifications, markNotificationRead } from "@/actions/notifications";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export type AppNotification = {
   id: string;
@@ -50,7 +51,7 @@ export function NotificationBell({ initialNotifications }: { initialNotification
         setOpen(false);
         router.push(notification.href);
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The notification could not be opened.");
+        setError(userFacingError(reason, "The notification could not be opened."));
       } finally {
         setPendingId("");
       }

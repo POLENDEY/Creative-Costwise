@@ -4,6 +4,7 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
@@ -25,7 +26,7 @@ export default function LoginPage() {
           ? "That email and password do not match. Check both and try again."
           : result.error === "Configuration" || result.error === "CallbackRouteError"
             ? "Your sign-in could not be completed because the account database is unavailable. Try again in a moment."
-            : result.error,
+            : userFacingError(result.error, "Sign-in could not be completed. Try again in a moment."),
       );
       setBusy(false);
       document.getElementById("email")?.focus();

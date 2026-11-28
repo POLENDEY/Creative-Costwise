@@ -11,7 +11,6 @@ export const checklistSteps = [
   { id: "order", label: "Create an order", annualOnly: false },
   { id: "document", label: "Make an invoice or receipt", annualOnly: false },
   { id: "finance", label: "Review sales and finance", annualOnly: false },
-  { id: "calendar", label: "Open the calendar", annualOnly: false },
 ] as const;
 
 const checklistSchema = z.record(z.string(), z.string());

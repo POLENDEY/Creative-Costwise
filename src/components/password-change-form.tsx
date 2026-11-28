@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { KeyRound } from "lucide-react";
 import { changeOwnPassword } from "@/actions/shop";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export function PasswordChangeForm() {
   const [message, setMessage] = useState("");
@@ -18,7 +19,7 @@ export function PasswordChangeForm() {
         setMessage("Your password has been updated.");
         (document.getElementById("password-change-form") as HTMLFormElement | null)?.reset();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "Your password could not be changed.");
+        setError(userFacingError(reason, "Your password could not be changed."));
       }
     });
   }

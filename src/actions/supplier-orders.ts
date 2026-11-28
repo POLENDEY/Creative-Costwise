@@ -7,6 +7,7 @@ import { expenseSourceKey } from "@/lib/inventory";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { resolveCurrency } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 const lineSchema = z.object({
   materialId: z.string().min(1),
@@ -102,7 +103,9 @@ export async function setSupplierOrderStatus(orderId: string, status: "sent" | "
         });
         await tx.material.update({ where: { id: material.id }, data: { quantityOnHand: next } });
       } catch (error) {
-        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") throw error;
+        if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== "P2002") {
+          throw new Error(userFacingError(error, "The supplier order could not be updated."));
+        }
       }
     }
     await tx.supplierOrder.update({
@@ -128,7 +131,7 @@ export async function deleteSupplierOrder(orderId: string) {
     await prisma.supplierOrder.delete({ where: { id: order.id } });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025") return;
-    throw error;
+    throw new Error(userFacingError(error, "Could not delete that order."));
   }
   revalidatePath("/materials");
 }

@@ -6,6 +6,7 @@ import { Boxes, Check, Save } from "lucide-react";
 import { updateAdminInventoryQuantity } from "@/actions/purchase-orders";
 import { ProductBreakdown } from "@/components/product-breakdown";
 import { formatMoney, resolveCurrency } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type InventoryRow = {
   id: string;
@@ -39,7 +40,7 @@ function InventoryItem({ item }: { item: InventoryRow }) {
         setMessage("Stock updated.");
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "Stock could not be updated.");
+        setError(userFacingError(reason, "Stock could not be updated."));
       }
     });
   }

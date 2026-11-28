@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { useState } from "react";
 import { recordPrinterSupplyPurchase } from "@/actions/print-hub";
 import { PAYMENT_METHODS } from "@/lib/inventory";
@@ -26,7 +28,7 @@ export function SupplyPurchaseForm({ currency }: { currency: Currency }) {
       await recordPrinterSupplyPurchase(formData);
       setRequestKey(crypto.randomUUID());
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not record that purchase.");
+      setError(userFacingError(cause, "Could not record that purchase."));
     } finally {
       setPending(false);
     }

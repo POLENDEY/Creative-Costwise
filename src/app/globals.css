@@ -497,7 +497,7 @@ button { color: inherit; }
 .password-input input { padding-inline-end: 3.4rem; }
 .reveal-button { position: absolute; inset-block-start: 0.25rem; inset-inline-end: 0.25rem; min-inline-size: 2.5rem; min-block-size: 2.5rem; }
 .login-submit { inline-size: 100%; min-block-size: 3rem; font-size: 1rem; }
-.form-error { margin: 0 0 0.9rem; color: #9f1239; font-size: 0.95rem; line-height: 1.45; }
+.form-error { margin: 0 0 0.9rem; color: var(--danger-ink); font-size: 0.95rem; line-height: 1.45; }
 .login-help { margin: 1.4rem 0 0; color: var(--muted); font-size: 0.95rem; line-height: 1.45; }
 @media (pointer: coarse) {
   .login-form input, .login-submit, .reveal-button { min-block-size: 3.25rem; }
@@ -748,7 +748,7 @@ button { color: inherit; }
 .admin-topbar-user { display: flex; align-items: center; gap: 14px; color: var(--muted); font-size: 10px; }
 .admin-topbar-user .button { min-height: 33px; font-size: 9px; }
 .admin-body { width: min(1350px, 100%); margin: 0 auto; padding: 16px 25px 40px; }
-.admin-tabs { display: flex; gap: 5px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 5px; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
 .admin-tab { min-height: 36px; display: inline-flex; align-items: center; gap: 8px; padding: 0 13px; color: var(--muted); border-radius: 7px; font-size: 10px; font-weight: 600; }
 .admin-tab:hover, .admin-tab-active { color: var(--accent); background: var(--accent-wash); }
 .admin-main { min-width: 0; }
@@ -964,6 +964,8 @@ button { color: inherit; }
   .record-actions { justify-content: flex-start; }
 }
 .form-error { margin: 0 0 12px; color: var(--danger-ink); }
+.form-error[role="alert"] { display: block; margin: 0 0 12px; padding: 10px 12px; border-radius: 8px; color: var(--danger-ink); background: var(--danger-soft); font-size: 13px; font-weight: 400; line-height: 1.45; overflow-wrap: anywhere; }
+.app-problem-action { margin-top: 16px; }
 .panel > h2, .admin-page .panel h2 { margin: 0 0 12px; color: var(--ink); font-family: Georgia, "Times New Roman", serif; font-size: 20px; font-weight: 400; }
 .resource-steps { margin: 8px 0 16px; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: 13px; line-height: 1.45; }
 .leaving-note { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 12px 0 0; color: var(--muted); font-size: 12px; }

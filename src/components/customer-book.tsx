@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { saveCustomer } from "@/actions/customers";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type CustomerRow = {
   id: string;
@@ -59,7 +60,7 @@ function CustomerForm({ customer, onError }: { customer?: CustomerRow; onError: 
     try {
       await saveCustomer(formData);
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "Could not save this customer.");
+      onError(userFacingError(cause, "Could not save this customer."));
     } finally {
       setPending(false);
     }

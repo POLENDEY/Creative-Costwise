@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveDigitalProduct } from "@/actions/catalog";
 import { formatMoney, parseMoneyToMinor, type Currency } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type DigitalRow = { id: string; name: string; priceMinor: number; url: string };
 
@@ -58,7 +59,7 @@ function DigitalForm({ currency, product, onError }: { currency: Currency; produ
     try {
       await saveDigitalProduct({ id: product?.id, name, priceMinor, url });
     } catch (cause) {
-      onError(cause instanceof Error ? cause.message : "Could not save this digital product.");
+      onError(userFacingError(cause, "Could not save this digital product."));
     } finally {
       setPending(false);
     }

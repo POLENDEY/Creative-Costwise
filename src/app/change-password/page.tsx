@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { changePassword } from "@/app/actions";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export default function ChangePasswordPage() {
   const [error, setError] = useState("");
@@ -14,7 +15,7 @@ export default function ChangePasswordPage() {
         await changePassword(formData);
       } catch (reason) {
         if (reason instanceof Error && !reason.message.includes("NEXT_REDIRECT")) {
-          setError(reason.message);
+          setError(userFacingError(reason, "Your password could not be changed."));
           document.getElementById("password")?.focus();
         }
       }

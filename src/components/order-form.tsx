@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveOrder } from "@/actions/orders";
 import { discountAmount, DELIVERY_METHODS, orderTotals, PAYMENT_STATUSES } from "@/lib/orders";
 import { formatMoney, parseMoneyToMinor, type Currency } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type CustomerOption = { id: string; name: string; phone: string; email: string; address: string };
 type ProductOption = { id: string; name: string; category: string; retailPriceMinor: number; bulkPriceMinor: number };
@@ -161,7 +162,7 @@ export function OrderForm({
       router.push(`/orders/${saved.id}`);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save this order.");
+      setError(userFacingError(cause, "Could not save this order."));
     } finally {
       setPending(false);
     }

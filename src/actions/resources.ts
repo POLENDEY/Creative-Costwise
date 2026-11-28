@@ -6,11 +6,12 @@ import { parseGoogleSheetsUrl, parseHttpsUrl, RESOURCE_SETTINGS_ID } from "@/lib
 import { prisma } from "@/lib/prisma";
 import { requireAdminSession } from "@/lib/admin-session";
 import { requireCrafter } from "@/lib/session";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type ActionResult = { error?: string };
 
 function message(error: unknown, fallback: string) {
-  return error instanceof Error ? error.message : fallback;
+  return userFacingError(error, fallback);
 }
 
 export async function saveMasterSheetLink(formData: FormData): Promise<ActionResult> {

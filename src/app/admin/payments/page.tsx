@@ -4,6 +4,7 @@ import { QrCode, ShieldCheck } from "lucide-react";
 import { requireAdminSession } from "@/lib/admin-session";
 import { prisma } from "@/lib/prisma";
 import { AdminPlanPayments } from "@/components/admin-plan-payments";
+import { isBlobReference } from "@/lib/file-store";
 import { getPlanPaymentDetails } from "@/lib/plan-payments";
 import { withDatabasePage } from "@/lib/with-database-page";
 
@@ -34,7 +35,7 @@ async function AdminPaymentsPage() {
       reviewedAt: payment.reviewedAt?.toISOString() ?? null,
       crafterName: payment.user.name,
       crafterEmail: payment.user.email,
-      hasProof: Boolean(payment.proofPath) && existsSync(path.resolve(PROOF_ROOT, payment.proofPath)),
+      hasProof: Boolean(payment.proofPath) && (isBlobReference(payment.proofPath) || existsSync(path.resolve(PROOF_ROOT, payment.proofPath))),
     }))
     .sort((a, b) => {
       const order = (status: string) => (status === "pending" ? 0 : 1);

@@ -1,6 +1,6 @@
 "use server";
 
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
@@ -8,6 +8,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
 import { requireAdminSession } from "@/lib/admin-session";
+import { deleteStoredFile, isBlobReference, saveImageFile } from "@/lib/file-store";
 import { convertImageUploadToAvif } from "@/lib/images";
 import { addPlanMonths, PLAN_KEYS, planFromPrices, planMonths } from "@/lib/plans";
 import { getPlanCatalog } from "@/lib/plan-catalog";
@@ -25,6 +26,10 @@ const LEGACY_QR_ROOT = path.join(process.cwd(), "public", "uploads", "plan-payme
 
 async function removeProofFile(storedPath: string) {
   if (!storedPath) return;
+  if (isBlobReference(storedPath)) {
+    await deleteStoredFile(storedPath);
+    return;
+  }
   const filePath = path.resolve(PROOF_ROOT, storedPath);
   if (filePath.startsWith(PROOF_ROOT + path.sep)) {
     await rm(filePath, { force: true });
@@ -32,7 +37,12 @@ async function removeProofFile(storedPath: string) {
 }
 
 async function removeQrFile(storedPath: string | null | undefined) {
-  const filename = storedPath ? path.basename(storedPath) : "";
+  if (!storedPath) return;
+  if (isBlobReference(storedPath)) {
+    await deleteStoredFile(storedPath);
+    return;
+  }
+  const filename = path.basename(storedPath);
   if (!filename) return;
   for (const root of [QR_ROOT, LEGACY_QR_ROOT]) {
     await rm(path.join(root, filename), { force: true });
@@ -75,10 +85,11 @@ export async function submitPlanPayment(formData: FormData) {
     quality: 78,
   });
 
-  const directory = path.join(PROOF_ROOT, user.id);
-  const filename = `${randomUUID()}.avif`;
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), image.buffer, { flag: "wx" });
+  const proofPath = await saveImageFile({
+    pathname: `plan-payments/${user.id}/${randomUUID()}.avif`,
+    body: image.buffer,
+    visibility: "private",
+  });
 
   const plan = planFromPrices(parsed.data.plan, await getPlanCatalog());
   const submittedAt = new Date();
@@ -90,7 +101,7 @@ export async function submitPlanPayment(formData: FormData) {
       method: parsed.data.method,
       reference: parsed.data.reference,
       note: parsed.data.note,
-      proofPath: path.posix.join("plan-payments", user.id, filename),
+      proofPath,
       status: "pending",
       submittedAt,
     },
@@ -288,10 +299,13 @@ export async function savePlanPaymentSettings(formData: FormData) {
       maxDimension: 1200,
       quality: 85,
     });
-    await mkdir(QR_ROOT, { recursive: true });
     const filename = `payment-qr-${randomUUID()}.avif`;
-    await writeFile(path.join(QR_ROOT, filename), image.buffer, { flag: "wx" });
-    qrPath = filename;
+    const stored = await saveImageFile({
+      pathname: `plan-payments-qr/${filename}`,
+      body: image.buffer,
+      visibility: "private",
+    });
+    qrPath = isBlobReference(stored) ? stored : filename;
   }
 
   await prisma.planPaymentSettings.upsert({

@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState, useTransition } from "react";
 import { ImagePlus, Upload } from "lucide-react";
 import { uploadShopLogo } from "@/actions/shop";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export function LogoUploader({ logoPath }: { logoPath: string | null }) {
   const [pending, startTransition] = useTransition();
@@ -16,7 +17,7 @@ export function LogoUploader({ logoPath }: { logoPath: string | null }) {
         await uploadShopLogo(formData);
         setMessage("Your business logo is saved.");
       } catch (reason) {
-        setMessage(reason instanceof Error ? reason.message : "The logo could not be uploaded.");
+        setMessage(userFacingError(reason, "The logo could not be uploaded."));
       }
     });
   }

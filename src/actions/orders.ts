@@ -15,6 +15,7 @@ import {
 } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { requirePlanFeature } from "@/lib/session";
+import { userFacingError } from "@/lib/user-facing-error";
 
 const lineSchema = z.object({
   kind: z.enum(["product", "bundle", "digital"]).default("product"),
@@ -225,10 +226,10 @@ export async function moveOrderStage(orderId: string, stage: string) {
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
     const message = error instanceof Error ? error.message : "";
-    if (message.includes("Transaction already closed") || message.includes("Transaction API error")) {
+    if (message.includes("Transaction already closed") || message.includes("Transaction API error") || message.includes("Saving took too long")) {
       throw new Error("Saving took too long because the database was slow. Move the order again.");
     }
-    throw error;
+    throw new Error(userFacingError(error, "Could not move that order."));
   }
 
   revalidatePath("/orders");

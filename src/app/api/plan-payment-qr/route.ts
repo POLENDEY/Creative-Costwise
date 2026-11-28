@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { readFile } from "node:fs/promises";
+import { isBlobReference, readPrivateImage } from "@/lib/file-store";
 import { getPlanPaymentQr } from "@/lib/plan-payments";
 
 /**
@@ -8,11 +9,17 @@ import { getPlanPaymentQr } from "@/lib/plan-payments";
  * the image keeps working after a rebuild or a dev-server restart.
  */
 export async function GET() {
-  const qr = await getPlanPaymentQr();
+  let qr: Awaited<ReturnType<typeof getPlanPaymentQr>>;
+  try {
+    qr = await getPlanPaymentQr();
+  } catch {
+    return new NextResponse("The payment QR code could not be opened. Try again in a moment.", { status: 503 });
+  }
   if (!qr) return new NextResponse("No payment QR code has been uploaded.", { status: 404 });
 
   try {
-    const file = await readFile(qr.filePath);
+    const file = isBlobReference(qr.filePath) ? await readPrivateImage(qr.filePath) : await readFile(qr.filePath);
+    if (!file) return new NextResponse("No payment QR code has been uploaded.", { status: 404 });
     return new NextResponse(new Uint8Array(file), {
       headers: {
         "Content-Type": "image/avif",

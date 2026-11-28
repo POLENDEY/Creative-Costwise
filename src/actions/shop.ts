@@ -2,8 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs";
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { calculateCost, calculateMaterialCostPerPiece, calculatePrinterBaseCosts } from "@/lib/costing";
@@ -11,6 +9,7 @@ import { parseMoneyToMinor } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter, requirePlanFeature } from "@/lib/session";
 import { checklistSteps, parseChecklist } from "@/lib/checklist";
+import { saveImageFile } from "@/lib/file-store";
 import { convertImageUploadToAvif } from "@/lib/images";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -135,11 +134,11 @@ export async function uploadShopLogo(formData: FormData) {
   if (!fileResult.success) throw new Error(fileResult.error.issues[0]?.message ?? "Check the logo file.");
   const file = fileResult.data;
   const image = await convertImageUploadToAvif(file);
-  const directory = path.join(process.cwd(), "public", "uploads", user.id);
-  const filename = `business-logo-${randomUUID()}.avif`;
-  await mkdir(directory, { recursive: true });
-  await writeFile(path.join(directory, filename), image.buffer, { flag: "wx" });
-  const logoPath = `/uploads/${user.id}/${filename}`;
+  const logoPath = await saveImageFile({
+    pathname: `uploads/${user.id}/business-logo-${randomUUID()}.avif`,
+    body: image.buffer,
+    visibility: "public",
+  });
 
   await prisma.shopSettings.upsert({
     where: { userId: user.id },

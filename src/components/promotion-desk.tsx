@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { useMemo, useState } from "react";
 import { savePromotion } from "@/actions/catalog";
 import { discountAmount } from "@/lib/orders";
@@ -54,7 +56,7 @@ export function PromotionDesk({ promotions, currency }: { promotions: PromotionR
           setNote("");
           setUpcomingNote("");
         } catch (cause) {
-          setError(cause instanceof Error ? cause.message : "Could not save this promotion.");
+          setError(userFacingError(cause, "Could not save this promotion."));
         } finally {
           setPending(false);
         }

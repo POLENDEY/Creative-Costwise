@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { useMemo, useState, useTransition } from "react";
 import { createSupplierOrder, deleteSupplierOrder, setSupplierOrderStatus } from "@/actions/supplier-orders";
 import { formatMoney, type Currency } from "@/lib/money";
@@ -67,7 +69,7 @@ export function SupplierOrders({
         setMessage("Supplier order saved. Mark it received when the stock arrives.");
         setNote("");
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "The supplier order could not be saved.");
+        setError(userFacingError(cause, "The supplier order could not be saved."));
       }
     });
   }
@@ -79,7 +81,7 @@ export function SupplierOrders({
         await setSupplierOrderStatus(id, status);
         setMessage(status === "received" ? "Stock updated from that delivery." : "Marked as sent.");
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "The supplier order could not be updated.");
+        setError(userFacingError(cause, "The supplier order could not be updated."));
       }
     });
   }
@@ -138,7 +140,7 @@ export function SupplierOrders({
               <div className="record-actions">
                 {order.status === "draft" && <button type="button" className="button button-secondary" onClick={() => update(order.id, "sent")} disabled={pending}>Mark sent</button>}
                 {order.status !== "received" && <button type="button" className="button button-primary" onClick={() => update(order.id, "received")} disabled={pending}>Received</button>}
-                {order.status !== "received" && <button type="button" className="button button-secondary" onClick={() => { setError(""); start(async () => { try { await deleteSupplierOrder(order.id); } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not delete that order."); } }); }} disabled={pending}>Delete</button>}
+                {order.status !== "received" && <button type="button" className="button button-secondary" onClick={() => { setError(""); start(async () => { try { await deleteSupplierOrder(order.id); } catch (cause) { setError(userFacingError(cause, "Could not delete that order.")); } }); }} disabled={pending}>Delete</button>}
               </div>
             </li>
           );

@@ -7,6 +7,7 @@ import { ArrowRight, CheckCircle2, FileDown, Plus, Save, Send, Trash2 } from "lu
 import { savePurchaseOrderDraft, submitPurchaseOrder } from "@/actions/purchase-orders";
 import { ProductBreakdown } from "@/components/product-breakdown";
 import { formatMoney, resolveCurrency, type Currency } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type CatalogProduct = {
   id: string;
@@ -112,7 +113,7 @@ export function PurchaseOrderWorkspace({
     saveTimer.current = window.setTimeout(() => {
       setIsSaving(true);
       enqueueDraftSave(lines, note, draftRevision.current).catch((reason: unknown) => {
-        setError(reason instanceof Error ? reason.message : "The draft could not be saved.");
+        setError(userFacingError(reason, "The draft could not be saved."));
         setDraftStatus("Draft not saved");
       }).finally(() => setIsSaving(false));
     }, 750);
@@ -144,7 +145,7 @@ export function PurchaseOrderWorkspace({
       await enqueueDraftSave(lines, note, draftRevision.current);
       setMessage("Your purchase order draft was saved.");
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "The draft could not be saved.");
+      setError(userFacingError(reason, "The draft could not be saved."));
     } finally {
       setIsSaving(false);
     }
@@ -200,7 +201,7 @@ export function PurchaseOrderWorkspace({
           : `Purchase request ${result.id.slice(-8)} was submitted. The admin was notified in the app. ${result.message}`);
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The purchase request could not be submitted.");
+        setError(userFacingError(reason, "The purchase request could not be submitted."));
       } finally {
         submitting.current = false;
       }

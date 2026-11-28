@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { useMemo, useState } from "react";
 import { saveBundle } from "@/actions/catalog";
 import { calculateBundle } from "@/lib/bundle";
@@ -97,7 +99,7 @@ function BundleForm({ products, currency, bundle }: { products: ProductOption[];
         items: items.map((item) => ({ priceSetId: item.priceSetId, quantity: Number(item.quantity) })),
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not save this bundle.");
+      setError(userFacingError(cause, "Could not save this bundle."));
     } finally {
       setPending(false);
     }

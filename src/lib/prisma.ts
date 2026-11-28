@@ -2,6 +2,7 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { setDefaultResultOrder } from "node:dns";
 import { PrismaClient } from "@prisma/client";
 import { assertProjectDatabase } from "@/lib/project-database";
+import { isTransientDatabaseError, softenDatabaseError } from "@/lib/user-facing-error";
 
 setDefaultResultOrder("ipv4first");
 assertProjectDatabase();
@@ -26,7 +27,7 @@ const READ_OPERATIONS = new Set([
   "aggregate",
   "groupBy",
 ]);
-const CACHE_VERSION = 10;
+const CACHE_VERSION = 11;
 const STALE_MS = 3 * 60 * 1000;
 const CACHE_TTL_MS = 20_000;
 
@@ -72,15 +73,7 @@ function clearReadCache() {
 }
 
 export function isTransientDbError(error: unknown) {
-  const message = error instanceof Error ? error.message : "";
-  return message.includes("DNS resolution")
-    || message.includes("hostname resolution")
-    || message.includes("unreachable network")
-    || message.includes("I/O error: timed out")
-    || message.includes("Server selection timeout")
-    || message.includes("server monitor timeout")
-    || message.includes("ReplicaSetNoPrimary")
-    || message.includes("RetryableWriteError");
+  return isTransientDatabaseError(error);
 }
 
 async function readWithRetry(load: () => Promise<unknown>) {
@@ -107,7 +100,7 @@ function readOperation(model: string, operation: string, args: unknown) {
 }
 
 function createPrisma() {
-  const log = process.env.NODE_ENV === "development" ? ["error", "warn"] as const : ["error"] as const;
+  const log = process.env.NODE_ENV === "development" ? ["warn"] as const : [] as const;
   const reader = new PrismaClient({
     datasources: { db: { url: clientDatabaseUrl("primaryPreferred", 8_000) } },
     log: [...log],
@@ -121,11 +114,15 @@ function createPrisma() {
     query: {
       $allModels: {
         async $allOperations({ model, operation, args, query }) {
-          if (!READ_OPERATIONS.has(operation) || bypassReadCache.getStore()) {
-            if (!READ_OPERATIONS.has(operation)) clearReadCache();
-            return query(args);
+          try {
+            if (!READ_OPERATIONS.has(operation) || bypassReadCache.getStore()) {
+              if (!READ_OPERATIONS.has(operation)) clearReadCache();
+              return await query(args);
+            }
+            return await remember(`${model}:${operation}:${JSON.stringify(args)}`, () => readWithRetry(() => readOperation(model, operation, args)));
+          } catch (error) {
+            throw softenDatabaseError(error);
           }
-          return remember(`${model}:${operation}:${JSON.stringify(args)}`, () => readWithRetry(() => readOperation(model, operation, args)));
         },
       },
     },
@@ -142,6 +139,8 @@ function createPrisma() {
       }
       try {
         return await bypassReadCache.run(true, () => transaction(...(next as [never])));
+      } catch (error) {
+        throw softenDatabaseError(error);
       } finally {
         clearReadCache();
       }

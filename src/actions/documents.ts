@@ -8,6 +8,7 @@ import { parseMoneyToMinor, resolveCurrency } from "@/lib/money";
 import { PAYMENT_STATUSES } from "@/lib/orders";
 import { prisma } from "@/lib/prisma";
 import { requirePlanFeature } from "@/lib/session";
+import { userFacingError } from "@/lib/user-facing-error";
 
 const lineSchema = z.object({
   label: z.string().trim().min(1).max(120),
@@ -118,7 +119,7 @@ export async function saveDocument(payload: unknown) {
       break;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002" && attempt < 2) continue;
-      throw error;
+      throw new Error(userFacingError(error, "Could not save this document."));
     }
   }
 

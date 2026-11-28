@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, type ReactNode } from "react";
+import { userFacingError } from "@/lib/user-facing-error";
 
 export function ResourceForm({
   action,
@@ -31,7 +32,7 @@ export function ResourceForm({
         startTransition(async () => {
           const result = await action(data);
           if (result?.error) {
-            setError(result.error);
+            setError(userFacingError(result.error, "That could not be saved."));
             return;
           }
           setSaved(true);
@@ -41,7 +42,7 @@ export function ResourceForm({
     >
       {children}
       <div className="form-actions">
-        <span>{error ? <b className="form-error">{error}</b> : saved ? "Saved." : " "}</span>
+        <span>{error ? <b className="form-error" role="alert">{error}</b> : saved ? "Saved." : " "}</span>
         <button className={`button ${secondary ? "button-secondary" : "button-primary"}`} type="submit" disabled={pending}>
           {pending ? "Saving…" : submitLabel}
         </button>

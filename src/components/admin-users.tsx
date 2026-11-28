@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, MailCheck, UserPlus } from "lucide-react";
@@ -70,7 +72,7 @@ function PlanPriceForm({ prices }: { prices: PlanPriceMap }) {
         setMessage("Plan prices saved. Crafters see them on the plans page.");
         router.refresh();
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The plan prices could not be saved.");
+        setError(userFacingError(reason, "The plan prices could not be saved."));
       }
     });
   }
@@ -112,7 +114,7 @@ export function AdminUsers({ users, emailReady, prices }: { users: UserRow[]; em
       try {
         setReminderResult(await sendRenewalRemindersNow());
       } catch (reason) {
-        setReminderError(reason instanceof Error ? reason.message : "The renewal emails could not be sent.");
+        setReminderError(userFacingError(reason, "The renewal emails could not be sent."));
       }
     });
   }
@@ -126,7 +128,7 @@ export function AdminUsers({ users, emailReady, prices }: { users: UserRow[]; em
         setPassword(result.temporaryPassword);
         setPasswordFor({ name: result.crafterName, email: result.crafterEmail });
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The account could not be created.");
+        setError(userFacingError(reason, "The account could not be created."));
       }
     });
   }

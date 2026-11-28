@@ -1,5 +1,7 @@
 "use client";
 
+import { userFacingError } from "@/lib/user-facing-error";
+
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -27,7 +29,7 @@ export function OrderBoard({ orders, currency }: { orders: BoardOrder[]; currenc
       await moveOrderStage(orderId, stage);
       router.refresh();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not move that order.");
+      setError(userFacingError(cause, "Could not move that order."));
     }
   }
 

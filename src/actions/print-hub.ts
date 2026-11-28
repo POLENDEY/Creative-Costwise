@@ -7,6 +7,7 @@ import { expenseSourceKey, PAYMENT_METHODS } from "@/lib/inventory";
 import { parseMoneyToMinor } from "@/lib/money";
 import { prisma } from "@/lib/prisma";
 import { requireCrafter } from "@/lib/session";
+import { userFacingError } from "@/lib/user-facing-error";
 
 const supplySchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -60,7 +61,7 @@ export async function recordPrinterSupplyPurchase(formData: FormData) {
     });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return;
-    throw error;
+    throw new Error(userFacingError(error, "Could not record that purchase."));
   }
 
   revalidatePath("/print-hub");

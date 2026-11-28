@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { isBlobReference } from "@/lib/file-store";
 import { appUrl, createMailTransport, escapeHtml, mailFromAddress } from "@/lib/mailer";
 import { prisma } from "@/lib/prisma";
 import { formatPlanPrice, getPlan } from "@/lib/plans";
@@ -28,6 +29,9 @@ export type PlanPaymentQr = { filename: string; filePath: string };
  * the reference. Both the current folder and the old public one are checked.
  */
 export function resolvePlanPaymentQr(stored: string | null | undefined): PlanPaymentQr | null {
+  if (stored && isBlobReference(stored)) {
+    return { filename: path.basename(new URL(stored).pathname), filePath: stored };
+  }
   const filename = stored ? path.basename(stored) : "";
   if (!filename) return null;
   for (const root of [QR_ROOT, LEGACY_QR_ROOT]) {

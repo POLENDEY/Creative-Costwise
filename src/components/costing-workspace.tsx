@@ -15,6 +15,7 @@ import {
 import { saveCostingTab, savePriceSet } from "@/actions/shop";
 import { calculateCost, calculateMaterialCostPerPiece } from "@/lib/costing";
 import { formatMoney, parseMoneyToMinor } from "@/lib/money";
+import { userFacingError } from "@/lib/user-facing-error";
 
 type Material = {
   id: string;
@@ -181,7 +182,7 @@ export function CostingWorkspace({
         setTabs((current) => [nextTab, ...current.filter((tab) => tab.id !== saved.id)]);
         setNotice("Cost estimate saved. Your suggested prices are up to date.");
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The cost estimate could not be saved.");
+        setError(userFacingError(reason, "The cost estimate could not be saved."));
       }
     });
   }
@@ -223,7 +224,7 @@ export function CostingWorkspace({
         setBulkInput("");
         setNotice("Price set saved to your price list.");
       } catch (reason) {
-        setError(reason instanceof Error ? reason.message : "The price set could not be saved.");
+        setError(userFacingError(reason, "The price set could not be saved."));
       }
     });
   }

@@ -2,9 +2,12 @@ import { pingDatabaseConnection } from "@/lib/prisma";
 
 const PING_INTERVAL_MS = 10_000;
 
+const KEEPALIVE_VERSION = 2;
+
 const globalForKeepAlive = globalThis as unknown as {
   databaseKeepAlive?: ReturnType<typeof setInterval>;
   databaseKeepAliveReady?: boolean;
+  databaseKeepAliveVersion?: number;
 };
 
 let pingInFlight = false;
@@ -18,6 +21,7 @@ async function pingDatabase() {
     nextPingAt = 0;
   } catch (error) {
     nextPingAt = Date.now() + 60_000;
+    process.stderr.write("[database] Keepalive ping failed.\n");
     throw error;
   } finally {
     pingInFlight = false;
@@ -29,16 +33,15 @@ async function pingDatabase() {
 }
 
 export function startDatabaseKeepAlive() {
-  if (globalForKeepAlive.databaseKeepAlive) return;
+  if (globalForKeepAlive.databaseKeepAlive && globalForKeepAlive.databaseKeepAliveVersion === KEEPALIVE_VERSION) return;
+  if (globalForKeepAlive.databaseKeepAlive) clearInterval(globalForKeepAlive.databaseKeepAlive);
   const timer = setInterval(() => {
     void pingDatabase().catch(() => {
       globalForKeepAlive.databaseKeepAliveReady = false;
-      console.error("Database keepalive ping failed.");
     });
   }, PING_INTERVAL_MS);
   timer.unref?.();
   globalForKeepAlive.databaseKeepAlive = timer;
-  void pingDatabase().catch(() => {
-    console.error("Database keepalive ping failed.");
-  });
+  globalForKeepAlive.databaseKeepAliveVersion = KEEPALIVE_VERSION;
+  void pingDatabase().catch(() => undefined);
 }
